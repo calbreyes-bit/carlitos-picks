@@ -547,15 +547,15 @@
   document.addEventListener('click', function(e){
     var toggle = e.target.closest('[data-toggle]');
     if (toggle) {
-      var id = toggle.getAttribute('data-toggle');
-      var ex = document.getElementById('expand-'+id);
+      var card = toggle.closest('.card');
+      var ex = card ? card.querySelector('.expand') : null;
       if (ex) ex.classList.toggle('open');
       return;
     }
     var fs = e.target.closest('[data-fs-toggle]');
     if (fs) {
-      var id2 = fs.getAttribute('data-fs-toggle');
-      var box = document.getElementById('fs-'+id2);
+      var card2 = fs.closest('.card');
+      var box = card2 ? card2.querySelector('.fullstats') : null;
       if (box) {
         box.classList.toggle('open');
         fs.textContent = box.classList.contains('open') ? 'Hide full stats' : 'Show full stats (all raw data)';
