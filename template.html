@@ -531,7 +531,7 @@
       });
       picks = picks.filter(Boolean);
       if (!picks.length) return false;
-      if (minStars > 0 && !picks.some(function(p){ return p.stars >= minStars; })) return false;
+      if (minStars > 0 && (!fx.best_bet || fx.best_bet.stars < minStars)) return false;
     }
     return true;
   }
