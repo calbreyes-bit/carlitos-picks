@@ -637,12 +637,11 @@
       var pick = pickFor(fx, marketKey, side);
       if (!fx || !pick) return;
       var trackOdds = parseAmericanOdds(pick.rec);
-      var defaultStake = trackOdds == null ? 1 :
-        Math.round((trackOdds > 0 ? (100/trackOdds) : (Math.abs(trackOdds)/100)) * 100) / 100;
+      var defaultStake = stakeForWin1(trackOdds);
       arr.push({
         trackId: trackId, fxId: fxId, marketKey: marketKey, side: side,
         matchLabel: fx.home + ' vs ' + fx.away, league: fx.league, date: fx.date,
-        rec: pick.rec, stars: pick.stars, stake: defaultStake, status: 'pending', addedAt: Date.now()
+        rec: pick.rec, stars: pick.stars, odds: trackOdds, stake: defaultStake, status: 'pending', addedAt: Date.now()
       });
       syncTrackButtons(trackId, true);
     }
@@ -654,9 +653,14 @@
     if (!m) return null;
     return parseInt(m[1], 10);
   }
+  function stakeForWin1(odds){
+    return (odds == null || isNaN(odds)) ? 1 :
+      Math.round((odds > 0 ? (100/odds) : (Math.abs(odds)/100)) * 100) / 100;
+  }
   function profitFor(entry){
     if (entry.status==='pending' || entry.status==='push') return 0;
-    var odds = parseAmericanOdds(entry.rec);
+    var odds = (entry.odds!=null && entry.odds!=='') ? parseFloat(entry.odds) : parseAmericanOdds(entry.rec);
+    if (isNaN(odds)) odds = null;
     var stake = parseFloat(entry.stake) || 0;
     var fullWinProfit = odds==null ? stake : (odds > 0 ? stake * (odds/100) : stake / (Math.abs(odds)/100));
     if (entry.status==='lost') return -stake;
@@ -686,6 +690,7 @@
         '<div class="top"><div><div class="rec">'+esc(e.rec)+'</div><div class="match">'+esc(e.matchLabel)+' · '+esc(e.league)+' · '+esc(fmtDay(e.date))+'</div></div>'+
         '<button class="remove-btn" data-remove="'+esc(e.trackId)+'">✕</button></div>'+
         '<div class="row2">'+
+          'Odds <input type="number" step="1" value="'+esc(e.odds!=null?e.odds:'')+'" data-odds="'+esc(e.trackId)+'" title="Type the odds you actually got at your sportsbook">'+
           'Stake <input type="number" min="0" step="0.25" value="'+esc(e.stake)+'" data-stake="'+esc(e.trackId)+'">'+
           '<button class="status-btn'+(e.status==='won'?' won':'')+'" data-status="won" data-id="'+esc(e.trackId)+'">Won</button>'+
           '<button class="status-btn'+(e.status==='half_won'?' won':'')+'" data-status="half_won" data-id="'+esc(e.trackId)+'">½ Won</button>'+
@@ -701,6 +706,18 @@
         var arr2 = loadTracked();
         var e = arr2.find(function(x){ return x.trackId===inp.getAttribute('data-stake'); });
         if (e) { e.stake = parseFloat(inp.value)||0; saveTracked(arr2); renderTracker(); }
+      });
+    });
+    document.querySelectorAll('[data-odds]').forEach(function(inp){
+      inp.addEventListener('change', function(){
+        var arr2 = loadTracked();
+        var e = arr2.find(function(x){ return x.trackId===inp.getAttribute('data-odds'); });
+        if (e) {
+          var v = inp.value.trim();
+          e.odds = v === '' ? null : parseFloat(v);
+          e.stake = stakeForWin1(e.odds); // re-size to win 1 unit at the odds you actually got
+          saveTracked(arr2); renderTracker();
+        }
       });
     });
     document.querySelectorAll('[data-status]').forEach(function(btn){
