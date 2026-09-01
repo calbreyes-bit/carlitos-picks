@@ -506,6 +506,46 @@
     document.getElementById('scrim').classList.remove('open');
   }
 
+  // ---------- filter persistence (localStorage, per browser) ----------
+  var FILTER_KEY = 'matchDayFilters_v1';
+  function saveFilterState(){
+    try {
+      localStorage.setItem(FILTER_KEY, JSON.stringify({
+        day: document.getElementById('f-day').value,
+        stars: document.getElementById('f-stars').value,
+        market: document.getElementById('f-market').value,
+        team: document.getElementById('f-team').value,
+        league: (leagueSelected.size === leagueSet.length) ? 'ALL' : Array.from(leagueSelected),
+        time: (timeSelected.size === timeSet.length) ? 'ALL' : Array.from(timeSelected)
+      }));
+    } catch(e){}
+  }
+  function loadFilterState(){
+    try { return JSON.parse(localStorage.getItem(FILTER_KEY) || 'null'); } catch(e){ return null; }
+  }
+  function restoreFilterState(){
+    var saved = loadFilterState();
+    if (!saved) return;
+    var daySel = document.getElementById('f-day');
+    if (saved.day && Array.from(daySel.options).some(function(o){ return o.value===saved.day; })) daySel.value = saved.day;
+    var starsSel = document.getElementById('f-stars');
+    if (saved.stars != null && Array.from(starsSel.options).some(function(o){ return o.value===saved.stars; })) starsSel.value = saved.stars;
+    var marketSel = document.getElementById('f-market');
+    if (saved.market != null && Array.from(marketSel.options).some(function(o){ return o.value===saved.market; })) marketSel.value = saved.market;
+    if (saved.team != null) document.getElementById('f-team').value = saved.team;
+    if (saved.league && saved.league !== 'ALL') {
+      var restoredLeagues = saved.league.filter(function(l){ return leagueSet.indexOf(l) !== -1; });
+      if (restoredLeagues.length) leagueSelected = new Set(restoredLeagues);
+    }
+    if (saved.time && saved.time !== 'ALL') {
+      var restoredTimes = saved.time.filter(function(t){ return timeSet.indexOf(t) !== -1; });
+      if (restoredTimes.length) timeSelected = new Set(restoredTimes);
+    }
+    renderLeagueOptions('');
+    renderTimeOptions();
+    updateDropdownCounts();
+  }
+
   function passesFilters(fx){
     var day = document.getElementById('f-day').value;
     if (day && fx.date !== day) return false;
@@ -537,6 +577,7 @@
   }
 
   function renderFixtures(){
+    saveFilterState();
     var list = FIXTURES.filter(passesFilters);
     document.getElementById('fixtureList').innerHTML = list.length
       ? list.map(function(f){ return cardHtml(f); }).join('')
@@ -743,6 +784,7 @@
   var gen = DATA.generatedAt ? new Date(DATA.generatedAt) : null;
   document.getElementById('genMeta').textContent = gen ? ('Updated ' + gen.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})) : '';
   buildFilterOptions();
+  restoreFilterState();
   renderTop();
   renderFixtures();
   renderTracker();
