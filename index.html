@@ -139,9 +139,9 @@
   .price-move .pm-val.pm-down{color:var(--red);}
   .price-move .spark{flex:none; display:block;}
   .moves-overview{background:var(--chip-bg); border-radius:10px; padding:9px 10px; margin-bottom:12px;}
-  .moves-overview h4{font-size:12px; margin:0 0 8px 0; color:var(--dim); text-transform:uppercase; letter-spacing:.03em;}
-  .moves-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:2px;}
-  .moves-col-title{font-size:11.5px; font-weight:600; margin-bottom:4px;}
+  .moves-overview h4{font-size:12px; margin:0 0 6px 0; color:var(--dim); text-transform:uppercase; letter-spacing:.03em;}
+  .moves-col-title{font-size:11.5px; font-weight:600; margin:6px 0 4px 0;}
+  .moves-col-title:first-of-type{margin-top:0;}
   .moves-item{display:flex; align-items:center; gap:5px; padding:3px 0;}
   .moves-item .mi-label{font-size:10.5px; color:var(--dim); width:58px; flex:none;}
   .moves-item .pm-val{font-size:12px; font-weight:600; font-variant-numeric:tabular-nums;}
@@ -411,16 +411,26 @@
     var m = fx.moves || {};
     var homeRows = movesOverviewRow('ML', m.ml_home) + movesOverviewRow('Total', m.tt_home);
     var awayRows = movesOverviewRow('ML', m.ml_away) + movesOverviewRow('Total', m.tt_away);
-    var matchRows = movesOverviewRow('Match Total', m.match_total) + movesOverviewRow('BTTS Yes', m.btts_yes) + movesOverviewRow('BTTS No', m.btts_no);
-    if (!homeRows && !awayRows && !matchRows) return '';
-    var cols = '';
-    if (homeRows) cols += '<div class="moves-col"><div class="moves-col-title">'+esc(fx.home)+'</div>'+homeRows+'</div>';
-    if (awayRows) cols += '<div class="moves-col"><div class="moves-col-title">'+esc(fx.away)+'</div>'+awayRows+'</div>';
-    return '<div class="moves-overview">'+
-        '<h4>Line Moves</h4>'+
-        (cols ? '<div class="moves-grid">'+cols+'</div>' : '')+
-        matchRows+
-      '</div>';
+    var matchRows = movesOverviewRow('Match Total', m.match_total) + movesOverviewRow('BTTS Yes', m.btts_yes);
+
+    var teamBlocks = '';
+    if (homeRows) teamBlocks += '<div class="moves-col-title">'+esc(fx.home)+'</div>'+homeRows;
+    if (awayRows) teamBlocks += '<div class="moves-col-title">'+esc(fx.away)+'</div>'+awayRows;
+
+    var out = '';
+    if (teamBlocks) {
+      out += '<div class="moves-overview">'+
+          '<h4>ML &amp; Team Total</h4>'+
+          teamBlocks+
+        '</div>';
+    }
+    if (matchRows) {
+      out += '<div class="moves-overview">'+
+          '<h4>Match Total &amp; BTTS</h4>'+
+          matchRows+
+        '</div>';
+    }
+    return out;
   }
 
   function marketRowHtml(fx, marketKey, side, pick, label){
