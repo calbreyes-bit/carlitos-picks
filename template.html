@@ -138,6 +138,16 @@
   .price-move .pm-val.pm-up{color:var(--green);}
   .price-move .pm-val.pm-down{color:var(--red);}
   .price-move .spark{flex:none; display:block;}
+  .moves-overview{background:var(--chip-bg); border-radius:10px; padding:9px 10px; margin-bottom:12px;}
+  .moves-overview h4{font-size:12px; margin:0 0 8px 0; color:var(--dim); text-transform:uppercase; letter-spacing:.03em;}
+  .moves-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:2px;}
+  .moves-col-title{font-size:11.5px; font-weight:600; margin-bottom:4px;}
+  .moves-item{display:flex; align-items:center; gap:5px; padding:3px 0;}
+  .moves-item .mi-label{font-size:10.5px; color:var(--dim); width:58px; flex:none;}
+  .moves-item .pm-val{font-size:12px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .moves-item .pm-val.pm-up{color:var(--green);}
+  .moves-item .pm-val.pm-down{color:var(--red);}
+  .moves-item .spark{flex:none; display:block;}
   .track-btn{
     flex:none; border:1px solid var(--accent); color:var(--accent); background:none; border-radius:20px;
     font-size:11px; padding:4px 10px; cursor:pointer; font-weight:600; white-space:nowrap;
@@ -383,6 +393,36 @@
       '</div>';
   }
 
+  // ---- consolidated "Line Moves" section: every covered market's move, in one place,
+  // regardless of which market the actual bet/Best Bet is on (Carlos's 2026-09-01 request).
+  function movesOverviewRow(label, hist){
+    if (!hist || hist.length < 2) return '';
+    var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
+    var favorable = currOdds >= openOdds;
+    return '<div class="moves-item">'+
+        '<span class="mi-label">'+esc(label)+'</span>'+
+        '<span class="pm-val">'+fmtAmerican(openOdds)+'</span>'+
+        sparklineSvg(hist)+
+        '<span class="pm-val '+(favorable?'pm-up':'pm-down')+'">'+fmtAmerican(currOdds)+'</span>'+
+      '</div>';
+  }
+
+  function movesOverviewHtml(fx){
+    var m = fx.moves || {};
+    var homeRows = movesOverviewRow('ML', m.ml_home) + movesOverviewRow('Total', m.tt_home);
+    var awayRows = movesOverviewRow('ML', m.ml_away) + movesOverviewRow('Total', m.tt_away);
+    var matchRows = movesOverviewRow('Match Total', m.match_total) + movesOverviewRow('BTTS Yes', m.btts_yes) + movesOverviewRow('BTTS No', m.btts_no);
+    if (!homeRows && !awayRows && !matchRows) return '';
+    var cols = '';
+    if (homeRows) cols += '<div class="moves-col"><div class="moves-col-title">'+esc(fx.home)+'</div>'+homeRows+'</div>';
+    if (awayRows) cols += '<div class="moves-col"><div class="moves-col-title">'+esc(fx.away)+'</div>'+awayRows+'</div>';
+    return '<div class="moves-overview">'+
+        '<h4>Line Moves</h4>'+
+        (cols ? '<div class="moves-grid">'+cols+'</div>' : '')+
+        matchRows+
+      '</div>';
+  }
+
   function marketRowHtml(fx, marketKey, side, pick, label){
     var trackId = fx.id + '::' + marketKey + (side?('::'+side):'');
     var tracked = isTracked(trackId);
@@ -472,6 +512,7 @@
       '</div>'+
       '<div class="expand" id="expand-'+esc(fx.id)+'">'+
         snapshotHtml(fx)+
+        movesOverviewHtml(fx)+
         marketsHtml(fx)+
         '<button class="fullstats-toggle" data-fs-toggle="'+esc(fx.id)+'">Show full stats (all raw data)</button>'+
         '<div class="fullstats" id="fs-'+esc(fx.id)+'">'+fullStatsHtml(fx)+'</div>'+
