@@ -132,6 +132,12 @@
   .market-row .rec.pass{color:var(--dim); font-weight:500;}
   .market-row .stars{color:var(--star); font-size:12px; margin-left:4px;}
   .market-row .reason{font-size:11.5px; color:var(--dim); margin-top:2px;}
+  .price-move{display:flex; align-items:center; gap:5px; margin-top:4px;}
+  .price-move .pm-label{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.02em;}
+  .price-move .pm-val{font-size:12px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .price-move .pm-val.pm-up{color:var(--green);}
+  .price-move .pm-val.pm-down{color:var(--red);}
+  .price-move .spark{flex:none; display:block;}
   .track-btn{
     flex:none; border:1px solid var(--accent); color:var(--accent); background:none; border-radius:20px;
     font-size:11px; padding:4px 10px; cursor:pointer; font-weight:600; white-space:nowrap;
@@ -169,6 +175,16 @@
   .status-btn.lost{background:var(--red-bg); color:var(--red); border-color:var(--red);}
   .status-btn.push{background:var(--amber-bg); color:var(--amber); border-color:var(--amber);}
   .remove-btn{background:none; border:none; color:var(--dim); font-size:16px; cursor:pointer; padding:0 2px;}
+  .identity-row{font-size:12px; color:var(--dim); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px 12px;}
+  .identity-row b{color:var(--text);}
+  .identity-switch{background:none; border:none; color:var(--accent); font-size:12px; font-weight:600; cursor:pointer; padding:0;}
+  .tcard.readonly{opacity:.85;}
+  .row2.readonly{gap:10px; font-size:12px; color:var(--dim); align-items:center;}
+  .row2.readonly .ro-stake, .row2.readonly .ro-odds{font-weight:600; color:var(--text);}
+  .status-chip{padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; background:var(--chip-bg); color:var(--dim);}
+  .status-chip.won, .status-chip.half_won{background:var(--green-bg); color:var(--green);}
+  .status-chip.lost, .status-chip.half_lost{background:var(--red-bg); color:var(--red);}
+  .status-chip.push{background:var(--amber-bg); color:var(--amber);}
 
   .footer-note{text-align:center; font-size:10.5px; color:var(--dim); padding:16px 10px 0 10px;}
 </style>
@@ -224,6 +240,7 @@
       <div class="box"><div class="n" id="tr-hitrate">–</div><div class="l">Hit rate</div></div>
       <div class="box"><div class="n" id="tr-units">0.00</div><div class="l">Units</div></div>
     </div>
+    <div id="identityRow" class="identity-row"></div>
     <div id="trackerList"></div>
   </section>
 </main>
@@ -313,6 +330,59 @@
     {key:'ah', label:'AH', single:false},
   ];
 
+  // ---------- price move (open -> current, with sparkline) ----------
+  function fmtAmerican(n){
+    if (n == null || isNaN(n)) return '–';
+    return (n > 0 ? '+' : '') + n;
+  }
+
+  function sparklineSvg(hist){
+    var vals = hist.map(function(p){ return p.o; });
+    var w = 46, h = 16, pad = 2;
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    if (min === max) { min -= 1; max += 1; }
+    var n = vals.length;
+    var pts = vals.map(function(v, i){
+      var x = n === 1 ? w/2 : (i/(n-1)) * (w - 2*pad) + pad;
+      var y = h - pad - ((v - min) / (max - min)) * (h - 2*pad);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    var favorable = vals[vals.length-1] >= vals[0];
+    var stroke = favorable ? 'var(--green)' : 'var(--red)';
+    return '<svg class="spark" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'">'+
+      '<polyline points="'+pts+'" fill="none" stroke="'+stroke+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '</svg>';
+  }
+
+  // Which fx.moves key (if any) applies to a given market row. Best Bet/DC/AH always
+  // return null -- api_footbal_odds.py doesn't pull those markets, so there's never
+  // real price history to show for them.
+  function moveKeyFor(marketKey, side, pick){
+    if (marketKey === 'match_total') return 'match_total';
+    if (marketKey === 'team_total') return side === 'home' ? 'tt_home' : 'tt_away';
+    if (marketKey === 'ml') return side === 'home' ? 'ml_home' : 'ml_away';
+    if (marketKey === 'btts') {
+      var r = ((pick && pick.rec) || '').trim().toLowerCase();
+      if (r.indexOf('yes') === 0) return 'btts_yes';
+      if (r.indexOf('no') === 0) return 'btts_no';
+      return null;
+    }
+    return null;
+  }
+
+  function moveLineHtml(fx, marketKey, side, pick){
+    var key = moveKeyFor(marketKey, side, pick);
+    var hist = key && fx.moves && fx.moves[key];
+    if (!hist || hist.length < 2) return '';
+    var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
+    var favorable = currOdds >= openOdds;
+    return '<div class="price-move">'+
+        '<span class="pm-label">Open</span><span class="pm-val">'+fmtAmerican(openOdds)+'</span>'+
+        sparklineSvg(hist)+
+        '<span class="pm-label">Now</span><span class="pm-val '+(favorable?'pm-up':'pm-down')+'">'+fmtAmerican(currOdds)+'</span>'+
+      '</div>';
+  }
+
   function marketRowHtml(fx, marketKey, side, pick, label){
     var trackId = fx.id + '::' + marketKey + (side?('::'+side):'');
     var tracked = isTracked(trackId);
@@ -325,6 +395,7 @@
       '<div class="body">'+
         '<span class="rec">'+esc(pick.rec)+'</span> <span class="stars">'+esc(stars(pick.stars))+'</span>'+
         (pick.reason ? '<div class="reason">'+esc(pick.reason)+'</div>' : '')+
+        moveLineHtml(fx, marketKey, side, pick)+
       '</div>'+
       '<button class="track-btn'+(tracked?' tracked':'')+'" data-track="'+esc(trackId)+'" data-fx="'+esc(fx.id)+'" data-market="'+esc(marketKey)+'" data-side="'+esc(side||'')+'">'+(tracked?'Tracked':'Track')+'</button>'+
     '</div>';
@@ -636,16 +707,46 @@
     });
   });
 
-  // ---------- tracker (localStorage) ----------
-  var TRACK_KEY = 'matchDayTracker_v1';
+  // ---------- tracker (Google Sheets sync via Apps Script, localStorage cache) ----------
+  var TRACK_KEY = 'matchDayTrackerCache_v1'; // last-synced picks (all users) -- offline fallback + instant paint
+  var IDENTITY_KEY = 'matchDayIdentity_v1';
+  var TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwGW4m2xudKSRI-lWyJboaEKwMG2OGycICAh2YoHFQBB-LbyaE9jETwBeOSypbtroUt/exec';
+  var STATUS_LABELS = {pending:'Pending', won:'Won', half_won:'½ Won', push:'Push', half_lost:'½ Lost', lost:'Lost'};
+
+  function getIdentity(){
+    try { return JSON.parse(localStorage.getItem(IDENTITY_KEY) || 'null'); } catch(e){ return null; }
+  }
+  function setIdentity(name, pin){
+    try { localStorage.setItem(IDENTITY_KEY, JSON.stringify({name:name, pin:pin})); } catch(e){}
+  }
+  function clearIdentity(){
+    try { localStorage.removeItem(IDENTITY_KEY); } catch(e){}
+  }
+  function ensureIdentity(){
+    var id = getIdentity();
+    if (id && id.name && id.pin) return id;
+    var name = window.prompt('Your name (as set up in the Users sheet):');
+    if (!name) return null;
+    var pin = window.prompt('Your PIN:');
+    if (!pin) return null;
+    setIdentity(name.trim(), pin.trim());
+    return getIdentity();
+  }
+
   function loadTracked(){
     try { return JSON.parse(localStorage.getItem(TRACK_KEY) || '[]'); } catch(e){ return []; }
   }
   function saveTracked(arr){
     try { localStorage.setItem(TRACK_KEY, JSON.stringify(arr)); } catch(e){}
   }
-  function isTracked(trackId){
-    return loadTracked().some(function(t){ return t.trackId === trackId; });
+  function isTracked(baseTrackId){
+    var id = getIdentity();
+    if (!id) return false;
+    var scoped = id.name + '::' + baseTrackId;
+    return loadTracked().some(function(t){ return t.trackId === scoped; });
+  }
+  function baseIdFromScoped(scopedId){
+    return String(scopedId).split('::').slice(1).join('::');
   }
   function findFixture(id){ return FIXTURES.filter(function(f){ return f.id===id; })[0]; }
   function pickFor(fx, marketKey, side){
@@ -663,31 +764,97 @@
       b.classList.toggle('tracked', tracked);
     });
   }
+  function resyncAllTrackButtons(){
+    document.querySelectorAll('[data-track]').forEach(function(b){
+      var baseId = b.getAttribute('data-track');
+      syncTrackButtons(baseId, isTracked(baseId));
+    });
+  }
+
+  // ---- server row <-> local entry shape ----
+  function serverRowToEntry(row){
+    return {
+      trackId: row.track_id, name: row.name, fxId: row.fx_id, marketKey: row.market_key, side: row.side || '',
+      matchLabel: row.match_label, league: row.league, date: row.date, rec: row.rec,
+      stars: (row.stars===''||row.stars==null) ? null : parseFloat(row.stars),
+      odds: (row.odds===''||row.odds==null) ? null : parseFloat(row.odds),
+      stake: (row.stake===''||row.stake==null) ? 0 : parseFloat(row.stake),
+      status: row.status || 'pending',
+      addedAt: row.added_at ? (Number(row.added_at) || row.added_at) : Date.now()
+    };
+  }
+  function entryToServerPick(entry){
+    return {
+      track_id: entry.trackId, name: entry.name, fx_id: entry.fxId, market_key: entry.marketKey, side: entry.side||'',
+      match_label: entry.matchLabel, league: entry.league, date: entry.date, rec: entry.rec,
+      stars: entry.stars, odds: entry.odds, stake: entry.stake, status: entry.status,
+      added_at: entry.addedAt, updated_at: Date.now()
+    };
+  }
+
+  // No custom headers on the POST, on purpose: fetch() then defaults the body's
+  // Content-Type to text/plain, which keeps this a CORS "simple request" (no preflight).
+  // Apps Script web apps don't answer OPTIONS preflights, so a JSON content-type here
+  // would break cross-origin POSTs entirely. doPost() on the other end JSON.parses the
+  // raw body regardless of what Content-Type it arrives with.
+  function postToServer(body){
+    return fetch(TRACKER_SYNC_URL, { method: 'POST', body: JSON.stringify(body) }).then(function(r){ return r.json(); });
+  }
+  function syncFromServer(){
+    return fetch(TRACKER_SYNC_URL).then(function(r){ return r.json(); }).then(function(data){
+      if (!data || !data.ok || !Array.isArray(data.picks)) return;
+      saveTracked(data.picks.map(serverRowToEntry));
+      renderTracker();
+      resyncAllTrackButtons();
+    }).catch(function(){ /* offline or unreachable -- keep showing the last-synced cache */ });
+  }
+
   function toggleTrack(btn){
-    var trackId = btn.getAttribute('data-track');
+    var baseTrackId = btn.getAttribute('data-track');
     var fxId = btn.getAttribute('data-fx');
     var marketKey = btn.getAttribute('data-market');
     var side = btn.getAttribute('data-side');
+    var identity = ensureIdentity();
+    if (!identity) return;
+    var scopedId = identity.name + '::' + baseTrackId;
     var arr = loadTracked();
-    var idx = arr.findIndex(function(t){ return t.trackId===trackId; });
+    var idx = arr.findIndex(function(t){ return t.trackId===scopedId; });
     if (idx !== -1) {
+      var removed = arr[idx];
       arr.splice(idx,1);
-      syncTrackButtons(trackId, false);
+      saveTracked(arr);
+      syncTrackButtons(baseTrackId, false);
+      renderTracker();
+      var revert = function(){
+        var arr2 = loadTracked(); arr2.push(removed); saveTracked(arr2);
+        syncTrackButtons(baseTrackId, true); renderTracker();
+      };
+      postToServer({action:'delete', name:identity.name, pin:identity.pin, trackId: scopedId}).then(function(res){
+        if (!res || !res.ok) { revert(); alert('Could not remove: ' + ((res&&res.error)||'server error')); }
+      }).catch(function(){ revert(); alert('Could not reach the tracker sheet -- change not saved.'); });
     } else {
       var fx = findFixture(fxId);
       var pick = pickFor(fx, marketKey, side);
       if (!fx || !pick) return;
       var trackOdds = parseAmericanOdds(pick.rec);
       var defaultStake = stakeForWin1(trackOdds);
-      arr.push({
-        trackId: trackId, fxId: fxId, marketKey: marketKey, side: side,
+      var entry = {
+        trackId: scopedId, name: identity.name, fxId: fxId, marketKey: marketKey, side: side,
         matchLabel: fx.home + ' vs ' + fx.away, league: fx.league, date: fx.date,
         rec: pick.rec, stars: pick.stars, odds: trackOdds, stake: defaultStake, status: 'pending', addedAt: Date.now()
-      });
-      syncTrackButtons(trackId, true);
+      };
+      arr.push(entry);
+      saveTracked(arr);
+      syncTrackButtons(baseTrackId, true);
+      renderTracker();
+      var revertAdd = function(){
+        var arr2 = loadTracked().filter(function(t){ return t.trackId !== scopedId; });
+        saveTracked(arr2); syncTrackButtons(baseTrackId, false); renderTracker();
+      };
+      postToServer({action:'upsert', name:identity.name, pin:identity.pin, pick: entryToServerPick(entry)}).then(function(res){
+        if (!res || !res.ok) { revertAdd(); alert('Could not save: ' + ((res&&res.error)||'server error')); }
+      }).catch(function(){ revertAdd(); alert('Could not reach the tracker sheet -- check your connection and try again.'); });
     }
-    saveTracked(arr);
-    renderTracker();
   }
   function parseAmericanOdds(rec){
     var m = rec && rec.match(/\(([+-]\d+)\)/);
@@ -709,7 +876,83 @@
     if (entry.status==='half_won') return fullWinProfit / 2; // AH: half stake pushes, half wins
     return fullWinProfit; // won
   }
+
+  // ---- edits to an already-tracked pick: optimistic local update, push to server, revert on failure ----
+  function pushEntryUpdate(entry, revertFn){
+    var identity = getIdentity();
+    if (!identity) { revertFn(); alert('Sign in first (tap "Sign in" above the tracker list).'); return; }
+    postToServer({action:'upsert', name:identity.name, pin:identity.pin, pick: entryToServerPick(entry)}).then(function(res){
+      if (!res || !res.ok) { revertFn(); alert('Could not save: ' + ((res&&res.error)||'server error')); }
+    }).catch(function(){ revertFn(); alert('Could not reach the tracker sheet -- change not saved.'); });
+  }
+  function updateStake(trackId, rawValue){
+    var arr = loadTracked();
+    var e = arr.find(function(x){ return x.trackId===trackId; });
+    if (!e) return;
+    var prev = e.stake;
+    e.stake = parseFloat(rawValue)||0;
+    saveTracked(arr); renderTracker();
+    pushEntryUpdate(e, function(){ e.stake = prev; saveTracked(arr); renderTracker(); });
+  }
+  function updateOdds(trackId, rawValue){
+    var arr = loadTracked();
+    var e = arr.find(function(x){ return x.trackId===trackId; });
+    if (!e) return;
+    var prevOdds = e.odds, prevStake = e.stake;
+    var v = String(rawValue).trim();
+    e.odds = v === '' ? null : parseFloat(v);
+    e.stake = stakeForWin1(e.odds); // re-size to win 1 unit at the odds you actually got
+    saveTracked(arr); renderTracker();
+    pushEntryUpdate(e, function(){ e.odds = prevOdds; e.stake = prevStake; saveTracked(arr); renderTracker(); });
+  }
+  function updateStatus(trackId, status){
+    var arr = loadTracked();
+    var e = arr.find(function(x){ return x.trackId===trackId; });
+    if (!e) return;
+    var prev = e.status;
+    e.status = (e.status === status) ? 'pending' : status;
+    saveTracked(arr); renderTracker();
+    pushEntryUpdate(e, function(){ e.status = prev; saveTracked(arr); renderTracker(); });
+  }
+  function removeTracked(trackId){
+    var arr = loadTracked();
+    var idx = arr.findIndex(function(x){ return x.trackId===trackId; });
+    if (idx === -1) return;
+    var removed = arr[idx];
+    var baseTrackId = baseIdFromScoped(trackId);
+    arr.splice(idx,1);
+    saveTracked(arr); renderTracker(); syncTrackButtons(baseTrackId, false);
+    var identity = getIdentity();
+    var revert = function(){
+      var arr2 = loadTracked(); arr2.push(removed); saveTracked(arr2);
+      renderTracker(); syncTrackButtons(baseTrackId, true);
+    };
+    if (!identity) { revert(); alert('Sign in first (tap "Sign in" above the tracker list).'); return; }
+    postToServer({action:'delete', name:identity.name, pin:identity.pin, trackId: trackId}).then(function(res){
+      if (!res || !res.ok) { revert(); alert('Could not remove: ' + ((res&&res.error)||'server error')); }
+    }).catch(function(){ revert(); alert('Could not reach the tracker sheet -- change not saved.'); });
+  }
+
+  function renderIdentityRow(){
+    var row = document.getElementById('identityRow');
+    if (!row) return;
+    var identity = getIdentity();
+    row.innerHTML = identity
+      ? 'Signed in as <b>'+esc(identity.name)+'</b><button class="identity-switch" id="identitySwitchBtn">Switch</button>'
+      : '<span>Not signed in</span><button class="identity-switch" id="identitySwitchBtn">Sign in</button>';
+    var btn = document.getElementById('identitySwitchBtn');
+    if (btn) btn.addEventListener('click', function(){
+      clearIdentity();
+      var id = ensureIdentity();
+      renderTracker();
+      resyncAllTrackButtons();
+      if (id) syncFromServer();
+    });
+  }
+
   function renderTracker(){
+    renderIdentityRow();
+    var identity = getIdentity();
     var arr = loadTracked().sort(function(a,b){ return b.addedAt-a.addedAt; });
     var w=0,l=0,p=0, units=0;
     function fmtRec(n){ return (n % 1 === 0) ? String(n) : n.toFixed(1); }
@@ -727,9 +970,20 @@
     document.getElementById('tr-units').textContent = (units>=0?'+':'') + units.toFixed(2);
 
     document.getElementById('trackerList').innerHTML = arr.length ? arr.map(function(e){
-      return '<div class="tcard" data-trackid="'+esc(e.trackId)+'">'+
-        '<div class="top"><div><div class="rec">'+esc(e.rec)+'</div><div class="match">'+esc(e.matchLabel)+' · '+esc(e.league)+' · '+esc(fmtDay(e.date))+'</div></div>'+
-        '<button class="remove-btn" data-remove="'+esc(e.trackId)+'">✕</button></div>'+
+      var mine = !!(identity && e.name === identity.name);
+      var head = '<div class="top"><div><div class="rec">'+esc(e.rec)+'</div><div class="match">'+esc(e.matchLabel)+' · '+esc(e.league)+' · '+esc(fmtDay(e.date))+' · '+esc(e.name||'?')+'</div></div>'+
+        (mine ? '<button class="remove-btn" data-remove="'+esc(e.trackId)+'">✕</button>' : '')+
+      '</div>';
+      if (!mine) {
+        return '<div class="tcard readonly" data-trackid="'+esc(e.trackId)+'">'+head+
+          '<div class="row2 readonly">'+
+            '<span class="ro-odds">'+esc(e.odds!=null?fmtAmerican(e.odds):'–')+'</span>'+
+            '<span class="ro-stake">'+esc(e.stake)+'u</span>'+
+            '<span class="status-chip '+esc(e.status)+'">'+esc(STATUS_LABELS[e.status]||e.status)+'</span>'+
+          '</div>'+
+        '</div>';
+      }
+      return '<div class="tcard" data-trackid="'+esc(e.trackId)+'">'+head+
         '<div class="row2">'+
           'Odds <input type="number" step="1" value="'+esc(e.odds!=null?e.odds:'')+'" data-odds="'+esc(e.trackId)+'" title="Type the odds you actually got at your sportsbook">'+
           'Stake <input type="number" min="0" step="0.25" value="'+esc(e.stake)+'" data-stake="'+esc(e.trackId)+'">'+
@@ -743,40 +997,16 @@
     }).join('') : '<div class="empty">No tracked bets yet. Tap a pick in Top Picks or Fixtures and hit "Track".</div>';
 
     document.querySelectorAll('[data-stake]').forEach(function(inp){
-      inp.addEventListener('change', function(){
-        var arr2 = loadTracked();
-        var e = arr2.find(function(x){ return x.trackId===inp.getAttribute('data-stake'); });
-        if (e) { e.stake = parseFloat(inp.value)||0; saveTracked(arr2); renderTracker(); }
-      });
+      inp.addEventListener('change', function(){ updateStake(inp.getAttribute('data-stake'), inp.value); });
     });
     document.querySelectorAll('[data-odds]').forEach(function(inp){
-      inp.addEventListener('change', function(){
-        var arr2 = loadTracked();
-        var e = arr2.find(function(x){ return x.trackId===inp.getAttribute('data-odds'); });
-        if (e) {
-          var v = inp.value.trim();
-          e.odds = v === '' ? null : parseFloat(v);
-          e.stake = stakeForWin1(e.odds); // re-size to win 1 unit at the odds you actually got
-          saveTracked(arr2); renderTracker();
-        }
-      });
+      inp.addEventListener('change', function(){ updateOdds(inp.getAttribute('data-odds'), inp.value); });
     });
     document.querySelectorAll('[data-status]').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var arr2 = loadTracked();
-        var e = arr2.find(function(x){ return x.trackId===btn.getAttribute('data-id'); });
-        if (e) {
-          var s = btn.getAttribute('data-status');
-          e.status = (e.status === s) ? 'pending' : s;
-          saveTracked(arr2); renderTracker();
-        }
-      });
+      btn.addEventListener('click', function(){ updateStatus(btn.getAttribute('data-id'), btn.getAttribute('data-status')); });
     });
     document.querySelectorAll('[data-remove]').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var arr2 = loadTracked().filter(function(x){ return x.trackId !== btn.getAttribute('data-remove'); });
-        saveTracked(arr2); renderTracker();
-      });
+      btn.addEventListener('click', function(){ removeTracked(btn.getAttribute('data-remove')); });
     });
   }
 
@@ -788,6 +1018,7 @@
   renderTop();
   renderFixtures();
   renderTracker();
+  syncFromServer();
 })();
 </script>
 </body>
