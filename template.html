@@ -140,8 +140,15 @@
   .price-move .spark{flex:none; display:block;}
   .moves-overview{background:var(--chip-bg); border-radius:10px; padding:9px 10px; margin-bottom:12px;}
   .moves-overview h4{font-size:12px; margin:0 0 6px 0; color:var(--dim); text-transform:uppercase; letter-spacing:.03em;}
-  .moves-col-title{font-size:11.5px; font-weight:600; margin:6px 0 4px 0;}
-  .moves-col-title:first-of-type{margin-top:0;}
+  .moves-table{display:grid; grid-template-columns:auto 1fr 1fr; column-gap:8px; row-gap:4px; align-items:center;}
+  .moves-table .mt-head{font-size:9.5px; color:var(--dim); text-transform:uppercase; letter-spacing:.02em;}
+  .moves-table .mt-team{font-size:11.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .moves-table .mt-cell{display:flex; align-items:center; gap:3px; min-width:0;}
+  .moves-table .mt-cell .pm-val{font-size:11px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .moves-table .mt-cell .pm-val.pm-up{color:var(--green);}
+  .moves-table .mt-cell .pm-val.pm-down{color:var(--red);}
+  .moves-table .mt-cell .spark{flex:none; display:block;}
+  .moves-table .mt-empty{font-size:11px; color:var(--dim);}
   .moves-item{display:flex; align-items:center; gap:5px; padding:3px 0;}
   .moves-item .mi-label{font-size:10.5px; color:var(--dim); width:58px; flex:none;}
   .moves-item .pm-val{font-size:12px; font-weight:600; font-variant-numeric:tabular-nums;}
@@ -346,9 +353,18 @@
     return (n > 0 ? '+' : '') + n;
   }
 
-  function sparklineSvg(hist){
+  function fmtLine(l){
+    if (l == null || isNaN(l)) return '';
+    return String(Math.round(l * 100) / 100);
+  }
+
+  function fmtLinePrice(l, o){
+    return (l != null ? fmtLine(l) + ' ' : '') + fmtAmerican(o);
+  }
+
+  function sparklineSvg(hist, width){
     var vals = hist.map(function(p){ return p.o; });
-    var w = 46, h = 16, pad = 2;
+    var w = width || 46, h = 16, pad = 2;
     var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
     if (min === max) { min -= 1; max += 1; }
     var n = vals.length;
@@ -398,30 +414,50 @@
   function movesOverviewRow(label, hist){
     if (!hist || hist.length < 2) return '';
     var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
+    var openLine = hist[0].l, currLine = hist[hist.length-1].l;
     var favorable = currOdds >= openOdds;
     return '<div class="moves-item">'+
         '<span class="mi-label">'+esc(label)+'</span>'+
-        '<span class="pm-val">'+fmtAmerican(openOdds)+'</span>'+
+        '<span class="pm-val">'+fmtLinePrice(openLine, openOdds)+'</span>'+
         sparklineSvg(hist)+
-        '<span class="pm-val '+(favorable?'pm-up':'pm-down')+'">'+fmtAmerican(currOdds)+'</span>'+
+        '<span class="pm-val '+(favorable?'pm-up':'pm-down')+'">'+fmtLinePrice(currLine, currOdds)+'</span>'+
       '</div>';
+  }
+
+  function movesTableCell(hist){
+    if (!hist || hist.length < 2) return '<span class="mt-empty">\u2013</span>';
+    var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
+    var openLine = hist[0].l, currLine = hist[hist.length-1].l;
+    var favorable = currOdds >= openOdds;
+    return '<span class="pm-val">'+fmtLinePrice(openLine, openOdds)+'</span>'+
+      sparklineSvg(hist, 32)+
+      '<span class="pm-val '+(favorable?'pm-up':'pm-down')+'">'+fmtLinePrice(currLine, currOdds)+'</span>';
+  }
+
+  function movesTableRow(teamName, mlHist, ttHist){
+    var hasMl = mlHist && mlHist.length >= 2;
+    var hasTt = ttHist && ttHist.length >= 2;
+    if (!hasMl && !hasTt) return '';
+    return '<div class="mt-team">'+esc(teamName)+'</div>'+
+      '<div class="mt-cell">'+movesTableCell(mlHist)+'</div>'+
+      '<div class="mt-cell">'+movesTableCell(ttHist)+'</div>';
   }
 
   function movesOverviewHtml(fx){
     var m = fx.moves || {};
-    var homeRows = movesOverviewRow('ML', m.ml_home) + movesOverviewRow('Total', m.tt_home);
-    var awayRows = movesOverviewRow('ML', m.ml_away) + movesOverviewRow('Total', m.tt_away);
+    var homeRow = movesTableRow(fx.home, m.ml_home, m.tt_home);
+    var awayRow = movesTableRow(fx.away, m.ml_away, m.tt_away);
     var matchRows = movesOverviewRow('Match Total', m.match_total) + movesOverviewRow('BTTS Yes', m.btts_yes);
 
-    var teamBlocks = '';
-    if (homeRows) teamBlocks += '<div class="moves-col-title">'+esc(fx.home)+'</div>'+homeRows;
-    if (awayRows) teamBlocks += '<div class="moves-col-title">'+esc(fx.away)+'</div>'+awayRows;
-
     var out = '';
-    if (teamBlocks) {
+    if (homeRow || awayRow) {
       out += '<div class="moves-overview">'+
           '<h4>ML &amp; Team Total</h4>'+
-          teamBlocks+
+          '<div class="moves-table">'+
+            '<div class="mt-head"></div><div class="mt-head">ML</div><div class="mt-head">Team Total</div>'+
+            homeRow+
+            awayRow+
+          '</div>'+
         '</div>';
     }
     if (matchRows) {
