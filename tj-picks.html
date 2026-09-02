@@ -286,6 +286,58 @@ footer.credit{
   font-family:var(--font-mono);margin-top:36px;
 }
 
+/* ---------- tabs ---------- */
+.tabbar{
+  display:flex;gap:4px;margin-bottom:20px;
+  border-bottom:1px solid var(--border);
+}
+.tabbtn{
+  border:none;background:transparent;color:var(--ink-muted);
+  font-family:var(--font-display);font-size:13px;text-transform:uppercase;
+  letter-spacing:.05em;font-weight:600;
+  padding:10px 4px;margin-right:22px;cursor:pointer;
+  border-bottom:2px solid transparent;
+  margin-bottom:-1px;
+}
+.tabbtn.active{color:var(--ink);border-bottom-color:var(--accent);}
+.tabbtn:hover:not(.active){color:var(--ink);}
+.tabpanel{display:none;}
+.tabpanel.active{display:block;}
+
+/* ---------- details table ---------- */
+.details-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);}
+table.details-table{width:100%;border-collapse:collapse;min-width:920px;}
+.details-table thead th{
+  position:sticky;top:0;background:var(--surface-2);
+  text-align:left;font-family:var(--font-display);font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);
+  font-weight:600;padding:9px 10px;border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+.details-table td{
+  padding:7px 10px;border-bottom:1px solid var(--border);
+  font-size:12.5px;vertical-align:middle;white-space:nowrap;
+}
+.details-table tbody tr:hover td{background:var(--surface-2);}
+.details-table td.dt-date{font-family:var(--font-mono);color:var(--ink-muted);font-size:11.5px;}
+.details-table td.dt-league{color:var(--ink-faint);font-size:11px;text-transform:uppercase;letter-spacing:.03em;font-family:var(--font-display);}
+.details-table td.dt-match{font-weight:600;white-space:normal;min-width:170px;}
+.details-table td.dt-pick{min-width:118px;}
+.dcell{
+  display:inline-flex;align-items:center;gap:5px;
+  border-radius:7px;padding:3px 8px;font-size:11px;font-weight:600;
+  white-space:normal;line-height:1.25;
+}
+.dcell.hit{background:var(--good-fill);color:var(--good);}
+.dcell.miss{background:var(--bad-fill);color:var(--bad);}
+.dcell.pending{background:var(--neutral-fill);color:var(--ink-muted);}
+.dcell .icon{font-size:10px;}
+.dt-empty{color:var(--ink-faint);}
+.details-count{
+  font-family:var(--font-mono);font-size:11.5px;color:var(--ink-faint);
+  margin:10px 2px 0;
+}
+
 @media (max-width:720px){
   .hero{grid-template-columns:repeat(2,1fr);}
   .breakdowns{grid-template-columns:1fr;}
@@ -305,8 +357,6 @@ footer.credit{
     <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
   </header>
 
-  <div class="hero" id="heroTiles"></div>
-
   <div class="filterbar">
     <div class="seg" id="presetSeg">
       <button data-preset="30d" class="active">30D</button>
@@ -322,32 +372,54 @@ footer.credit{
     <div class="type-filter" id="typeFilter"></div>
   </div>
 
-  <div class="breakdowns">
-    <div class="panel">
-      <h2>Hit rate by lean type</h2>
-      <div id="typeBreakdown"></div>
+  <div class="tabbar" id="tabbar">
+    <button class="tabbtn active" data-tab="summary">Dashboard Summary</button>
+    <button class="tabbtn" data-tab="details">Dashboard Details</button>
+  </div>
+
+  <div class="tabpanel active" id="tab-summary">
+    <div class="hero" id="heroTiles"></div>
+
+    <div class="breakdowns">
+      <div class="panel">
+        <h2>Hit rate by lean type</h2>
+        <div id="typeBreakdown"></div>
+      </div>
+      <div class="panel">
+        <h2>Hit rate by league <span style="font-weight:400;text-transform:none;letter-spacing:0;">(5+ graded)</span></h2>
+        <table class="league-table">
+          <thead><tr><th>League</th><th class="num">Record</th><th class="num">Picks</th><th class="num">Hit%</th></tr></thead>
+          <tbody id="leagueBreakdown"></tbody>
+        </table>
+      </div>
     </div>
-    <div class="panel">
-      <h2>Hit rate by league <span style="font-weight:400;text-transform:none;letter-spacing:0;">(5+ graded)</span></h2>
-      <table class="league-table">
-        <thead><tr><th>League</th><th class="num">Record</th><th class="num">Picks</th><th class="num">Hit%</th></tr></thead>
-        <tbody id="leagueBreakdown"></tbody>
+
+    <div class="panel chart-panel">
+      <div class="chart-head">
+        <h2 style="margin:0;">Cumulative record &mdash; selected range</h2>
+        <span class="cur" id="chartCur"></span>
+      </div>
+      <div class="chart-wrap">
+        <svg class="chart-svg" id="chartSvg" viewBox="0 0 1000 150" preserveAspectRatio="none"></svg>
+        <div class="chart-tip" id="chartTip"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-details">
+    <div class="details-scroll">
+      <table class="details-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>League</th><th>Match</th>
+            <th>Lean 1</th><th>Lean 2</th><th>Lean 3</th><th>Parlay</th>
+          </tr>
+        </thead>
+        <tbody id="detailsBody"></tbody>
       </table>
     </div>
+    <div class="details-count" id="detailsCount"></div>
   </div>
-
-  <div class="panel chart-panel">
-    <div class="chart-head">
-      <h2 style="margin:0;">Cumulative record &mdash; selected range</h2>
-      <span class="cur" id="chartCur"></span>
-    </div>
-    <div class="chart-wrap">
-      <svg class="chart-svg" id="chartSvg" viewBox="0 0 1000 150" preserveAspectRatio="none"></svg>
-      <div class="chart-tip" id="chartTip"></div>
-    </div>
-  </div>
-
-  <div id="matchList"></div>
 
   <footer class="credit">TJ Picks &middot; 2923 matches tracked since 2025-03-14</footer>
 </div>
@@ -590,41 +662,52 @@ const DATA = [{"id":"m1","league":"Australia A-League","home":"Adelaide United",
     });
   }
 
-  var DAY_MS = 86400000;
-  function renderMatchList(matches){
-    var el = document.getElementById('matchList');
+  var SLOTS = ['Lean 1','Lean 2','Lean 3','Parlay Piece'];
+  function dcell(p){
+    if (!p) return '<span class="dt-empty">&ndash;</span>';
+    var icon = p.status==='hit' ? '✓' : p.status==='miss' ? '✕' : '•';
+    var label = p.status==='hit' ? 'HIT' : p.status==='miss' ? 'MISS' : 'PEND';
+    return '<span class="dcell '+p.status+'"><span class="icon">'+icon+'</span>'+esc(p.text)+' &middot; '+label+'</span>';
+  }
+
+  function renderDetailsTable(matches){
+    var body = document.getElementById('detailsBody');
+    var countEl = document.getElementById('detailsCount');
     if (!matches.length){
-      el.innerHTML = '<div class="empty-state">No picks in this range.</div>';
+      body.innerHTML = '<tr><td colspan="7"><div class="empty-state">No picks in this range.</div></td></tr>';
+      countEl.textContent = '';
       return;
     }
-    var byDate = {};
-    matches.forEach(function(m){ (byDate[m.date] = byDate[m.date] || []).push(m); });
-    var dates = Object.keys(byDate).sort().reverse();
-    var html = [];
-    dates.forEach(function(d){
-      var ms = byDate[d];
-      var gradedInDay = ms.reduce(function(a,m){ return a + m.picks.filter(function(p){return p.status!=='pending';}).length; }, 0);
-      html.push('<div class="day-heading"><span>'+d+'</span><span class="cnt">'+ms.length+' match'+(ms.length===1?'':'es')+'</span></div>');
-      ms.forEach(function(m){
-        var chips = m.picks.map(function(p){
-          var icon = p.status==='hit' ? '✓' : p.status==='miss' ? '✕' : '•';
-          var label = p.status==='hit' ? 'HIT' : p.status==='miss' ? 'MISS' : 'PEND';
-          return '<span class="pick-chip '+p.status+'"><span class="icon">'+icon+'</span>'+esc(p.text)+'<span class="slot">'+label+'</span></span>';
-        }).join('');
-        html.push(
-          '<div class="match-row">'+
-            '<div class="match-meta">'+
-              '<div class="match-league">'+esc(m.league||'')+'</div>'+
-              '<div class="match-teams">'+esc(m.home||'')+' vs '+esc(m.away||'')+'</div>'+
-              '<div class="match-time">'+(m.time||'')+'</div>'+
-            '</div>'+
-            '<div class="match-picks">'+chips+'</div>'+
-          '</div>'
-        );
-      });
+    var sorted = matches.slice().sort(function(a,b){
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return (a.time||'') < (b.time||'') ? 1 : -1;
     });
-    el.innerHTML = html.join('');
+    var html = sorted.map(function(m){
+      var bySlot = {};
+      m.picks.forEach(function(p){ bySlot[p.slot] = p; });
+      var cells = SLOTS.map(function(s){ return '<td class="dt-pick">'+dcell(bySlot[s])+'</td>'; }).join('');
+      return '<tr>'+
+        '<td class="dt-date">'+esc(m.date)+(m.time?' '+esc(m.time):'')+'</td>'+
+        '<td class="dt-league">'+esc(m.league||'')+'</td>'+
+        '<td class="dt-match">'+esc(m.home||'')+' vs '+esc(m.away||'')+'</td>'+
+        cells+
+      '</tr>';
+    }).join('');
+    body.innerHTML = html;
+    var gradedCount = matches.reduce(function(a,m){ return a + m.picks.filter(function(p){return p.status!=='pending';}).length; }, 0);
+    countEl.textContent = sorted.length+' match'+(sorted.length===1?'':'es')+' · '+gradedCount+' graded pick'+(gradedCount===1?'':'s')+' shown';
   }
+
+  var tabbar = document.getElementById('tabbar');
+  tabbar.addEventListener('click', function(e){
+    var btn = e.target.closest('.tabbtn');
+    if (!btn) return;
+    var tab = btn.getAttribute('data-tab');
+    Array.prototype.forEach.call(tabbar.querySelectorAll('.tabbtn'), function(b){ b.classList.toggle('active', b===btn); });
+    Array.prototype.forEach.call(document.querySelectorAll('.tabpanel'), function(p){
+      p.classList.toggle('active', p.id === 'tab-'+tab);
+    });
+  });
 
   function refresh(){
     var filtered = currentFiltered();
@@ -633,7 +716,7 @@ const DATA = [{"id":"m1","league":"Australia A-League","home":"Adelaide United",
     renderTypeBreakdown(stats);
     renderLeagueBreakdown(stats);
     renderChart(filtered);
-    renderMatchList(filtered);
+    renderDetailsTable(filtered);
     document.getElementById('rangeLabel').textContent = 'tracked by Carlos · '+fromInput.value+' to '+toInput.value;
   }
 
