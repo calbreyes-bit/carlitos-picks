@@ -155,13 +155,19 @@ header.top{
 }
 
 /* ---------- filter bar ---------- */
-.filterbar{
+.filter-sticky{
   position:sticky;top:0;z-index:5;
   background:var(--bg);
-  padding:12px 0;
+  padding:12px 0 14px;
   border-bottom:1px solid var(--border);
   margin-bottom:20px;
+}
+.filterbar-row{
   display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+}
+.filter-label{
+  font-family:var(--font-display);text-transform:uppercase;font-size:10.5px;
+  letter-spacing:.06em;color:var(--ink-faint);flex:none;
 }
 .seg{
   display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px;
@@ -182,7 +188,7 @@ header.top{
   border-radius:7px;padding:5px 8px;
 }
 
-.type-filter{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;}
+.type-filter{display:flex;gap:6px;flex-wrap:wrap;}
 .type-chip{
   border:1px solid var(--border);background:var(--surface);color:var(--ink-muted);
   font-family:var(--font-body);font-size:12px;font-weight:600;
@@ -357,19 +363,26 @@ table.details-table{width:100%;border-collapse:collapse;min-width:920px;}
     <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
   </header>
 
-  <div class="filterbar">
-    <div class="seg" id="presetSeg">
-      <button data-preset="30d" class="active">30D</button>
-      <button data-preset="7d">7D</button>
-      <button data-preset="month">This Month</button>
-      <button data-preset="all">All Time</button>
+  <div class="filter-sticky">
+    <div class="filterbar-row">
+      <div class="seg" id="presetSeg">
+        <button data-preset="30d" class="active">30D</button>
+        <button data-preset="7d">7D</button>
+        <button data-preset="month">This Month</button>
+        <button data-preset="all">All Time</button>
+      </div>
+      <div class="datefields">
+        <input type="date" id="fromDate">
+        <span>&ndash;</span>
+        <input type="date" id="toDate">
+      </div>
     </div>
-    <div class="datefields">
-      <input type="date" id="fromDate">
-      <span>&ndash;</span>
-      <input type="date" id="toDate">
+    <div class="filterbar-row" style="margin-top:9px;">
+      <span class="filter-label">Type</span>
+      <div class="type-filter" id="typeFilter"></div>
+      <span class="filter-label" style="margin-left:14px;">Lean</span>
+      <div class="type-filter" id="slotFilter"></div>
     </div>
-    <div class="type-filter" id="typeFilter"></div>
   </div>
 
   <div class="tabbar" id="tabbar">
@@ -486,6 +499,26 @@ const DATA = [{"id":"m1","league":"Australia A-League","home":"Adelaide United",
     refresh();
   });
 
+  var SLOTS_ALL = ['Lean 1','Lean 2','Lean 3','Parlay Piece'];
+  var SLOT_SHORT = {'Lean 1':'Lean 1','Lean 2':'Lean 2','Lean 3':'Lean 3','Parlay Piece':'Parlay'};
+  var activeSlots = {};
+  SLOTS_ALL.forEach(function(s){ activeSlots[s] = true; });
+
+  var slotFilterEl = document.getElementById('slotFilter');
+  slotFilterEl.innerHTML = SLOTS_ALL.map(function(s){
+    return '<button class="type-chip active" data-slot="'+esc(s)+'">'+esc(SLOT_SHORT[s])+'</button>';
+  }).join('');
+  slotFilterEl.addEventListener('click', function(e){
+    var btn = e.target.closest('.type-chip');
+    if (!btn) return;
+    var s = btn.getAttribute('data-slot');
+    var activeCount = SLOTS_ALL.filter(function(x){return activeSlots[x];}).length;
+    if (activeSlots[s] && activeCount === 1) return; // keep at least one
+    activeSlots[s] = !activeSlots[s];
+    btn.classList.toggle('active', activeSlots[s]);
+    refresh();
+  });
+
   var fromInput = document.getElementById('fromDate');
   var toInput = document.getElementById('toDate');
   var presetSeg = document.getElementById('presetSeg');
@@ -523,7 +556,7 @@ const DATA = [{"id":"m1","league":"Australia A-League","home":"Adelaide United",
     return DATA.filter(function(m){
       return m.date && m.date >= from && m.date <= to;
     }).map(function(m){
-      var picks = m.picks.filter(function(p){ return activeTypes[p.type]; });
+      var picks = m.picks.filter(function(p){ return activeTypes[p.type] && activeSlots[p.slot]; });
       return picks.length ? Object.assign({}, m, {picks: picks}) : null;
     }).filter(Boolean);
   }
