@@ -470,12 +470,25 @@
     return null;
   }
 
+  // A market's line can move on its own (e.g. Match Total 2.5 -> 3.0) independently of
+  // (or even opposite to) the price -- treat a real line move as the decisive signal,
+  // same as line_steam's own open-vs-current comparison in the scoring code, and only
+  // fall back to price-only when the line didn't move or the market has no line at all
+  // (ML/BTTS). Otherwise a line moving toward Over/higher can still get colored "bad"
+  // just because the price alone looks worse in isolation (Carlos, 2026-09-02).
+  function isFavorableMove(hist){
+    var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
+    var openLine = hist[0].l, currLine = hist[hist.length-1].l;
+    if (openLine != null && currLine != null && openLine !== currLine) return currLine > openLine;
+    return currOdds <= openOdds;
+  }
+
   function moveLineHtml(fx, marketKey, side, pick){
     var key = moveKeyFor(marketKey, side, pick);
     var hist = key && fx.moves && fx.moves[key];
     if (!hist || hist.length < 2) return '';
     var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
-    var favorable = currOdds <= openOdds;
+    var favorable = isFavorableMove(hist);
     return '<div class="price-move">'+
         '<span class="pm-label">Open</span><span class="pm-val">'+fmtAmerican(openOdds)+'</span>'+
         sparklineSvg(hist)+
@@ -489,7 +502,7 @@
     if (!hist || hist.length < 2) return '';
     var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
     var openLine = hist[0].l, currLine = hist[hist.length-1].l;
-    var favorable = currOdds <= openOdds;
+    var favorable = isFavorableMove(hist);
     return '<div class="moves-item">'+
         '<span class="mi-label">'+esc(label)+'</span>'+
         '<span class="pm-val">'+fmtLinePrice(openLine, openOdds)+'</span>'+
@@ -502,7 +515,7 @@
     if (!hist || hist.length < 2) return '<span class="mt-empty">\u2013</span>';
     var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
     var openLine = hist[0].l, currLine = hist[hist.length-1].l;
-    var favorable = currOdds <= openOdds;
+    var favorable = isFavorableMove(hist);
     return '<span class="pm-val">'+fmtLinePrice(openLine, openOdds)+'</span>'+
       sparklineSvg(hist, 32)+
       '<span class="pm-val '+(favorable?'pm-up':'pm-down')+'">'+fmtLinePrice(currLine, currOdds)+'</span>';
@@ -548,12 +561,22 @@
   function marketRowHtml(fx, marketKey, side, pick, label){
     var trackId = fx.id + '::' + marketKey + (side?('::'+side):'');
     var tracked = isTracked(trackId);
-    if (!pick) {
-      return '<div class="market-row"><div class="label">'+esc(label)+'</div><div class="body"><span class="rec pass">PASS</span></div></div>';
-    }
     var teamName = side ? (side==='home'?fx.home:fx.away) : '';
-    return '<div class="market-row">'+
-      '<div class="label">'+esc(label)+(teamName?'<br><span style="opacity:.6">'+esc(teamName.split(' ')[0])+'</span>':'')+'</div>'+
+    var labelHtml = '<div class="label">'+esc(label)+(teamName?'<br><span style="opacity:.6">'+esc(teamName.split(' ')[0])+'</span>':'')+'</div>';
+    if (!pick) {
+      return '<div class="market-row">'+labelHtml+'<div class="body"><span class="rec pass">PASS</span></div></div>';
+    }
+    if (pick.stars == null) {
+      // PASS, but with its explanation -- same info a real pick gets, minus stars/Track.
+      return '<div class="market-row">'+labelHtml+
+        '<div class="body">'+
+          '<span class="rec pass">PASS</span>'+
+          (pick.reason ? '<div class="reason">'+esc(pick.reason)+'</div>' : '')+
+          moveLineHtml(fx, marketKey, side, pick)+
+        '</div>'+
+      '</div>';
+    }
+    return '<div class="market-row">'+labelHtml+
       '<div class="body">'+
         '<span class="rec">'+esc(pick.rec)+'</span> <span class="stars">'+esc(stars(pick.stars))+'</span>'+
         (pick.reason ? '<div class="reason">'+esc(pick.reason)+'</div>' : '')+
@@ -803,7 +826,7 @@
           picks.push((fx[mk]||{}).away);
         }
       });
-      picks = picks.filter(Boolean);
+      picks = picks.filter(function(p){ return p && p.stars != null; });
       if (!picks.length) return false;
       if (minStars > 0 && (!fx.best_bet || fx.best_bet.stars < minStars)) return false;
     }
