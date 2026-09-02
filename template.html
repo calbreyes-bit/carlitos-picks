@@ -190,6 +190,16 @@
   .tsum .box{flex:1; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px; text-align:center;}
   .tsum .box .n{font-size:18px; font-weight:800;}
   .tsum .box .l{font-size:10.5px; color:var(--dim); text-transform:uppercase;}
+  .tr-filters{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:10px;}
+  .tr-filters .tr-preset-btn{background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer;}
+  .tr-filters .tr-datelabel{display:flex; align-items:center; gap:4px; font-size:12px; color:var(--dim); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:5px 8px;}
+  .tr-filters .tr-datelabel input[type=date]{border:none; background:none; color:var(--text); font-size:12.5px; padding:0; max-width:112px;}
+  .tr-chart-wrap{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 10px 6px 10px; margin-bottom:14px;}
+  .tr-chart-svg{width:100%; height:100px; display:block;}
+  .tr-chart-baseline{stroke:var(--border); stroke-width:1; stroke-dasharray:3,3;}
+  .tr-chart-labels{display:flex; justify-content:space-between; font-size:10.5px; color:var(--dim); margin-bottom:4px;}
+  .tr-chart-labels .tr-chart-total{font-weight:800; color:var(--text); font-size:12px;}
+  .tr-chart-empty{font-size:12.5px; color:var(--dim); text-align:center; padding:14px 0;}
   .tcard{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:11px 13px; margin-bottom:9px;}
   .tcard .top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
   .tcard .rec{font-size:13px; font-weight:600;}
@@ -261,11 +271,20 @@
   </section>
 
   <section class="tab" id="tab-tracker">
+    <div class="tr-filters">
+      <button class="tr-preset-btn" data-preset="all">All</button>
+      <button class="tr-preset-btn" data-preset="7d">7D</button>
+      <button class="tr-preset-btn" data-preset="30d">30D</button>
+      <button class="tr-preset-btn" data-preset="month">This month</button>
+      <label class="tr-datelabel">From <input type="date" id="tr-from"></label>
+      <label class="tr-datelabel">To <input type="date" id="tr-to"></label>
+    </div>
     <div class="tsum">
       <div class="box"><div class="n" id="tr-record">0-0-0</div><div class="l">Record</div></div>
       <div class="box"><div class="n" id="tr-hitrate">–</div><div class="l">Hit rate</div></div>
       <div class="box"><div class="n" id="tr-units">0.00</div><div class="l">Units</div></div>
     </div>
+    <div class="tr-chart-wrap" id="tr-chart-wrap"></div>
     <div id="identityRow" class="identity-row"></div>
     <div id="trackerList"></div>
   </section>
@@ -527,7 +546,7 @@
       '</div>';
     }
     var h2h = snap.h2h || {};
-    var h2hHtml = '<div class="h2h-box"><div class="row1"><span>H2H played: <b>'+(h2h.played!=null?h2h.played:'0')+'</b></span><span>Avg goals: <b>'+(h2h.avgGoals!=null?h2h.avgGoals:'–')+'</b></span><span>BTTS: <b>'+(h2h.bttsPct||'–')+'</b></span></div>'+
+    var h2hHtml = '<div class="h2h-box"><div class="row1"><span>H2H played: <b>'+(h2h.played!=null?h2h.played:'0')+'</b></span><span>Avg goals: <b>'+(h2h.avgGoals!=null?h2h.avgGoals:'–')+'</b></span><span>BTTS: <b>'+(h2h.bttsPct!=null?h2h.bttsPct+'%':'–')+'</b></span></div>'+
       (h2h.last5 && h2h.last5.length ? '<div class="h2h-last5">'+h2h.last5.map(function(m){return '<span class="h2h-chip">'+esc(m)+'</span>';}).join('')+'</div>' : '<div style="font-size:11px;color:var(--dim);">No recent meetings on record</div>')+
     '</div>';
     return '<div class="snapshot-grid">'+col(fx.home, h, fx.homeLogo)+col(fx.away, a, fx.awayLogo)+'</div>' + h2hHtml;
@@ -811,6 +830,45 @@
   var TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwGW4m2xudKSRI-lWyJboaEKwMG2OGycICAh2YoHFQBB-LbyaE9jETwBeOSypbtroUt/exec';
   var STATUS_LABELS = {pending:'Pending', won:'Won', half_won:'½ Won', push:'Push', half_lost:'½ Lost', lost:'Lost'};
 
+  // ---- tracker date-range filter (localStorage, per browser) ----
+  var TR_FILTER_KEY = 'matchDayTrackerFilters_v1';
+  function saveTrackerFilterState(){
+    try {
+      localStorage.setItem(TR_FILTER_KEY, JSON.stringify({
+        from: document.getElementById('tr-from').value,
+        to: document.getElementById('tr-to').value
+      }));
+    } catch(e){}
+  }
+  function loadTrackerFilterState(){
+    try { return JSON.parse(localStorage.getItem(TR_FILTER_KEY) || 'null'); } catch(e){ return null; }
+  }
+  function restoreTrackerFilterState(){
+    var saved = loadTrackerFilterState();
+    if (!saved) return;
+    if (saved.from) document.getElementById('tr-from').value = saved.from;
+    if (saved.to) document.getElementById('tr-to').value = saved.to;
+  }
+  function pad2(n){ return n<10 ? '0'+n : ''+n; }
+  function dateStr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+  function todayStr(){ return dateStr(new Date()); }
+  function addDaysStr(baseStr, days){
+    var d = new Date(baseStr+'T12:00:00');
+    d.setDate(d.getDate()+days);
+    return dateStr(d);
+  }
+  function applyTrackerPreset(name){
+    var today = todayStr();
+    var from = '', to = '';
+    if (name === '7d') { from = addDaysStr(today, -6); to = today; }
+    else if (name === '30d') { from = addDaysStr(today, -29); to = today; }
+    else if (name === 'month') { from = today.slice(0,8)+'01'; to = today; }
+    document.getElementById('tr-from').value = from;
+    document.getElementById('tr-to').value = to;
+    saveTrackerFilterState();
+    renderTracker();
+  }
+
   function getIdentity(){
     try { return JSON.parse(localStorage.getItem(IDENTITY_KEY) || 'null'); } catch(e){ return null; }
   }
@@ -975,6 +1033,57 @@
     return fullWinProfit; // won
   }
 
+  function renderTrackerChart(entries){
+    var wrap = document.getElementById('tr-chart-wrap');
+    if (!wrap) return;
+    var settled = entries.filter(function(e){ return e.status && e.status !== 'pending'; });
+    if (!settled.length) {
+      wrap.innerHTML = '<div class="tr-chart-empty">No settled bets in this period.</div>';
+      return;
+    }
+    var byDate = {};
+    settled.forEach(function(e){
+      var d = e.date || '';
+      if (!d) return;
+      byDate[d] = (byDate[d] || 0) + profitFor(e);
+    });
+    var dates = Object.keys(byDate).sort();
+    if (!dates.length) {
+      wrap.innerHTML = '<div class="tr-chart-empty">No settled bets in this period.</div>';
+      return;
+    }
+    var cum = 0;
+    var pts = dates.map(function(d){ cum += byDate[d]; return {date: d, val: cum}; });
+    if (pts.length === 1) {
+      var v = pts[0].val;
+      wrap.innerHTML = '<div class="tr-chart-empty">'+esc(fmtDay(pts[0].date))+': '+(v>=0?'+':'')+v.toFixed(2)+'u (only one day of activity)</div>';
+      return;
+    }
+    var W = 300, H = 100, padL = 4, padR = 4, padT = 8, padB = 8;
+    var minTs = new Date(pts[0].date+'T12:00:00').getTime();
+    var maxTs = new Date(pts[pts.length-1].date+'T12:00:00').getTime();
+    var xSpan = Math.max(1, maxTs - minTs);
+    var vals = pts.map(function(p){ return p.val; });
+    var minV = Math.min(0, Math.min.apply(null, vals));
+    var maxV = Math.max(0, Math.max.apply(null, vals));
+    if (minV === maxV) { minV -= 1; maxV += 1; }
+    var padV = (maxV - minV) * 0.1;
+    minV -= padV; maxV += padV;
+    function xPos(p){ var ts = new Date(p.date+'T12:00:00').getTime(); return padL + (ts - minTs) / xSpan * (W - padL - padR); }
+    function yPos(v){ return padT + (1 - (v - minV) / (maxV - minV)) * (H - padT - padB); }
+    var y0 = yPos(0);
+    var linePts = pts.map(function(p){ return xPos(p)+','+yPos(p.val); }).join(' ');
+    var lastVal = pts[pts.length-1].val;
+    var lineColor = lastVal >= 0 ? 'var(--green)' : 'var(--red)';
+    var areaPath = 'M'+xPos(pts[0])+','+y0+' L'+pts.map(function(p){return xPos(p)+','+yPos(p.val);}).join(' L')+' L'+xPos(pts[pts.length-1])+','+y0+' Z';
+    var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="tr-chart-svg">'+
+      '<line x1="'+padL+'" y1="'+y0+'" x2="'+(W-padR)+'" y2="'+y0+'" class="tr-chart-baseline"/>'+
+      '<path d="'+areaPath+'" fill="'+lineColor+'" opacity="0.15" stroke="none"/>'+
+      '<polyline points="'+linePts+'" fill="none" stroke="'+lineColor+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'+
+      '</svg>';
+    wrap.innerHTML = '<div class="tr-chart-labels"><span>'+esc(fmtDay(pts[0].date))+'</span><span class="tr-chart-total">'+(lastVal>=0?'+':'')+lastVal.toFixed(2)+'u</span><span>'+esc(fmtDay(pts[pts.length-1].date))+'</span></div>'+svg;
+  }
+
   // ---- edits to an already-tracked pick: optimistic local update, push to server, revert on failure ----
   function pushEntryUpdate(entry, revertFn){
     var identity = getIdentity();
@@ -1051,7 +1160,13 @@
   function renderTracker(){
     renderIdentityRow();
     var identity = getIdentity();
-    var arr = loadTracked().sort(function(a,b){ return b.addedAt-a.addedAt; });
+    var fromVal = document.getElementById('tr-from') ? document.getElementById('tr-from').value : '';
+    var toVal = document.getElementById('tr-to') ? document.getElementById('tr-to').value : '';
+    var arr = loadTracked().filter(function(e){
+      if (fromVal && e.date && e.date < fromVal) return false;
+      if (toVal && e.date && e.date > toVal) return false;
+      return true;
+    }).sort(function(a,b){ return b.addedAt-a.addedAt; });
     var w=0,l=0,p=0, units=0;
     function fmtRec(n){ return (n % 1 === 0) ? String(n) : n.toFixed(1); }
     arr.forEach(function(e){
@@ -1106,13 +1221,21 @@
     document.querySelectorAll('[data-remove]').forEach(function(btn){
       btn.addEventListener('click', function(){ removeTracked(btn.getAttribute('data-remove')); });
     });
+    renderTrackerChart(arr);
   }
+
+  document.querySelectorAll('.tr-preset-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ applyTrackerPreset(btn.getAttribute('data-preset')); });
+  });
+  document.getElementById('tr-from').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
+  document.getElementById('tr-to').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
 
   // ---------- init ----------
   var gen = DATA.generatedAt ? new Date(DATA.generatedAt) : null;
   document.getElementById('genMeta').textContent = gen ? ('Updated ' + gen.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})) : '';
   buildFilterOptions();
   restoreFilterState();
+  restoreTrackerFilterState();
   renderTop();
   renderFixtures();
   renderTracker();
