@@ -223,12 +223,33 @@
   .status-chip.push{background:var(--amber-bg); color:var(--amber);}
 
   .footer-note{text-align:center; font-size:10.5px; color:var(--dim); padding:16px 10px 0 10px;}
+
+  /* explicit theme choice (toggle) -- overrides both :root and prefers-color-scheme */
+  :root[data-theme="light"]{
+    --bg:#f4f5f7; --card:#ffffff; --text:#16181d; --dim:#6b7280; --border:#e5e7eb;
+    --accent:#2563eb; --accent-dim:#dbeafe; --green:#16a34a; --green-bg:#dcfce7;
+    --red:#dc2626; --red-bg:#fee2e2; --amber:#d97706; --amber-bg:#fef3c7;
+    --star:#f59e0b; --chip-bg:#eef0f3; --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 8px rgba(0,0,0,.04);
+  }
+  :root[data-theme="dark"]{
+    --bg:#000000; --card:#0d1520; --text:#f2f5f9; --dim:#93a3b8; --border:#22303f;
+    --accent:#6cabdd; --accent-dim:#16324f; --green:#4ade80; --green-bg:#0f2d1c;
+    --red:#f87171; --red-bg:#3a1414; --amber:#fbbf24; --amber-bg:#3a2c0d;
+    --star:#fbbf24; --chip-bg:#16202c; --shadow:0 1px 2px rgba(0,0,0,.6),0 1px 12px rgba(0,0,0,.5);
+  }
+  .theme-toggle-btn{
+    position:absolute; top:9px; right:14px; background:var(--card); border:1px solid var(--border);
+    border-radius:20px; padding:5px 10px; font-size:13px; line-height:1; cursor:pointer; color:var(--text);
+  }
+  .mcfc-crest{display:none; height:20px; width:20px; vertical-align:-5px; margin-right:5px; border-radius:50%;}
+  :root[data-theme="dark"] .mcfc-crest{display:inline-block;}
 </style>
 </head>
 <body>
 
 <header class="top">
-  <h1>⚽ Match Day Board</h1>
+  <button class="theme-toggle-btn" id="themeToggle" aria-label="Toggle light/dark theme">🌙</button>
+  <h1><img class="mcfc-crest" src="https://media.api-sports.io/football/teams/50.png" alt="" onerror="this.style.display='none'"> Match Day Board</h1>
   <div class="meta" id="genMeta"></div>
   <nav class="tabs">
     <button data-tab="top" class="active">Top Picks</button>
@@ -315,6 +336,30 @@
   "use strict";
   var DATA = JSON.parse(document.getElementById('fixtures-data').textContent || '{"fixtures":[]}');
   var FIXTURES = DATA.fixtures || [];
+
+  // ---- theme (light/dark toggle, localStorage, per browser; overrides system default) ----
+  var THEME_KEY = 'matchDayTheme_v1';
+  function loadTheme(){
+    try { return localStorage.getItem(THEME_KEY) || null; } catch(e){ return null; }
+  }
+  function saveTheme(mode){
+    try { mode ? localStorage.setItem(THEME_KEY, mode) : localStorage.removeItem(THEME_KEY); } catch(e){}
+  }
+  function isEffectivelyDark(mode){
+    return mode === 'dark' || (mode !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  function applyTheme(mode){
+    if (mode === 'dark' || mode === 'light') document.documentElement.setAttribute('data-theme', mode);
+    else document.documentElement.removeAttribute('data-theme');
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.textContent = isEffectivelyDark(mode) ? '☀️' : '🌙';
+  }
+  function toggleTheme(){
+    var next = isEffectivelyDark(loadTheme()) ? 'light' : 'dark';
+    saveTheme(next);
+    applyTheme(next);
+  }
+  applyTheme(loadTheme()); // apply immediately, before first paint of the rest of the page
 
   // ---------- helpers ----------
   function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -1229,6 +1274,7 @@
   });
   document.getElementById('tr-from').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
   document.getElementById('tr-to').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
   // ---------- init ----------
   var gen = DATA.generatedAt ? new Date(DATA.generatedAt) : null;
