@@ -135,6 +135,7 @@
   .market-row .reason{font-size:11.5px; color:var(--dim); margin-top:2px;}
   .price-move{display:flex; align-items:center; gap:5px; margin-top:4px;}
   .price-move .pm-label{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.02em;}
+  .mi-note{font-size:9px; font-weight:400; color:var(--dim); margin-left:3px;}
   .price-move .pm-val{font-size:12px; font-weight:600; font-variant-numeric:tabular-nums;}
   .price-move .pm-val.pm-up{color:var(--green);}
   .price-move .pm-val.pm-down{color:var(--red);}
@@ -177,6 +178,17 @@
   }
   .fullstats{display:none; margin-top:10px;}
   .fullstats.open{display:block;}
+
+  .custom-pick{margin-top:10px;}
+  .cp-form{display:none; flex-direction:column; gap:7px; margin-top:7px; padding:10px; border-radius:10px; background:var(--chip-bg);}
+  .cp-form.open{display:flex;}
+  .cp-desc{width:100%; box-sizing:border-box; padding:7px 9px; border-radius:7px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:12.5px;}
+  .cp-row2{display:flex; align-items:center; gap:8px;}
+  .cp-odds{width:88px; padding:7px 9px; border-radius:7px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:12.5px;}
+  .cp-hint{font-size:10.5px; color:var(--dim); flex:1;}
+  .cp-add-btn{flex:none; border:1px solid var(--accent); color:#fff; background:var(--accent); border-radius:7px; font-size:12px; padding:7px 14px; cursor:pointer; font-weight:600;}
+  .cp-add-btn:disabled{opacity:.5; cursor:default;}
+  .cp-added{font-size:12px; color:var(--green); font-weight:600;}
   .fs-section{margin-bottom:10px;}
   .fs-section h5{font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--dim); margin:0 0 5px 0;}
   .fs-table{width:100%; border-collapse:collapse; font-size:12px;}
@@ -486,7 +498,14 @@
   function moveLineHtml(fx, marketKey, side, pick){
     var key = moveKeyFor(marketKey, side, pick);
     var hist = key && fx.moves && fx.moves[key];
-    if (!hist || hist.length < 2) return '';
+    if (!hist || !hist.length) return '';
+    if (hist.length < 2) {
+      // Only one price pull captured so far for this market -- nothing to chart yet,
+      // but show the one price we do have instead of silently showing nothing.
+      return '<div class="price-move">'+
+          '<span class="pm-label">First pull</span><span class="pm-val">'+fmtAmerican(hist[0].o)+'</span>'+
+        '</div>';
+    }
     var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
     var favorable = isFavorableMove(hist);
     return '<div class="price-move">'+
@@ -499,7 +518,13 @@
   // ---- consolidated "Line Moves" section: every covered market's move, in one place,
   // regardless of which market the actual bet/Best Bet is on (Carlos's 2026-09-01 request).
   function movesOverviewRow(label, hist){
-    if (!hist || hist.length < 2) return '';
+    if (!hist || !hist.length) return '';
+    if (hist.length < 2) {
+      return '<div class="moves-item">'+
+          '<span class="mi-label">'+esc(label)+'</span>'+
+          '<span class="pm-val">'+fmtLinePrice(hist[0].l, hist[0].o)+'<span class="mi-note">first pull</span></span>'+
+        '</div>';
+    }
     var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
     var openLine = hist[0].l, currLine = hist[hist.length-1].l;
     var favorable = isFavorableMove(hist);
@@ -512,7 +537,10 @@
   }
 
   function movesTableCell(hist){
-    if (!hist || hist.length < 2) return '<span class="mt-empty">\u2013</span>';
+    if (!hist || !hist.length) return '<span class="mt-empty">\u2013</span>';
+    if (hist.length < 2) {
+      return '<span class="pm-val">'+fmtLinePrice(hist[0].l, hist[0].o)+'<span class="mi-note">first pull</span></span>';
+    }
     var openOdds = hist[0].o, currOdds = hist[hist.length-1].o;
     var openLine = hist[0].l, currLine = hist[hist.length-1].l;
     var favorable = isFavorableMove(hist);
@@ -522,8 +550,8 @@
   }
 
   function movesTableRow(teamName, mlHist, ttHist){
-    var hasMl = mlHist && mlHist.length >= 2;
-    var hasTt = ttHist && ttHist.length >= 2;
+    var hasMl = mlHist && mlHist.length >= 1;
+    var hasTt = ttHist && ttHist.length >= 1;
     if (!hasMl && !hasTt) return '';
     return '<div class="mt-team">'+esc(teamName)+'</div>'+
       '<div class="mt-cell">'+movesTableCell(mlHist)+'</div>'+
@@ -659,6 +687,17 @@
         snapshotHtml(fx)+
         movesOverviewHtml(fx)+
         marketsHtml(fx)+
+        '<div class="custom-pick">'+
+          '<button class="fullstats-toggle" data-cp-toggle="'+esc(fx.id)+'">+ Track a custom pick (market or line not shown above)</button>'+
+          '<div class="cp-form" id="cp-form-'+esc(fx.id)+'">'+
+            '<input type="text" class="cp-desc" maxlength="80" placeholder="e.g. Match Total Over 2.0" data-cp-desc="'+esc(fx.id)+'">'+
+            '<div class="cp-row2">'+
+              '<input type="number" step="1" class="cp-odds" placeholder="Odds" data-cp-odds="'+esc(fx.id)+'">'+
+              '<span class="cp-hint">Odds you got at your book (optional)</span>'+
+              '<button class="cp-add-btn" data-cp-add="'+esc(fx.id)+'">Add to tracker</button>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
         '<button class="fullstats-toggle" data-fs-toggle="'+esc(fx.id)+'">Show full stats (all raw data)</button>'+
         '<div class="fullstats" id="fs-'+esc(fx.id)+'">'+fullStatsHtml(fx)+'</div>'+
       '</div>'+
@@ -864,6 +903,32 @@
     if (trackBtn) {
       e.stopPropagation();
       toggleTrack(trackBtn);
+      return;
+    }
+    var cpToggle = e.target.closest('[data-cp-toggle]');
+    if (cpToggle) {
+      e.stopPropagation();
+      // Scoped to this exact button's own container, not looked up by id -- a fixture
+      // with a real recommendation renders once in Top Picks and again in Fixtures, each
+      // with its own (duplicate-id) copy of this form, so getElementById would silently
+      // grab whichever copy happens to come first in the document instead of the one
+      // actually clicked (Carlos, 2026-09-03: this is the same duplicate-card situation
+      // the Track button already works around, see syncTrackButtons above).
+      var form = cpToggle.closest('.custom-pick').querySelector('.cp-form');
+      if (form) {
+        var opening = !form.classList.contains('open');
+        form.classList.toggle('open', opening);
+        if (opening) {
+          var inp = form.querySelector('.cp-desc');
+          if (inp) inp.focus();
+        }
+      }
+      return;
+    }
+    var cpAdd = e.target.closest('[data-cp-add]');
+    if (cpAdd) {
+      e.stopPropagation();
+      addCustomTrack(cpAdd);
       return;
     }
   });
@@ -1081,6 +1146,59 @@
       }).catch(function(){ revertAdd(); alert('Could not reach the tracker sheet -- check your connection and try again.'); });
     }
   }
+
+  // A pick your own book offers that the model doesn't map to one of its six markets
+  // (a different line, a market the model doesn't compute, etc). Tracks free-text like
+  // any other pick -- it just isn't tied to one of the model's own recommendations.
+  // Takes the actual clicked button (not a fixture id) so it always operates on the
+  // exact form the user typed into, even when this fixture also has a duplicate-id
+  // copy of the form rendered in the Top Picks tab -- see the cp-toggle handler above.
+  function addCustomTrack(btn){
+    var fxId = btn.getAttribute('data-cp-add');
+    var container = btn.closest('.custom-pick');
+    var descEl = container.querySelector('.cp-desc');
+    var oddsEl = container.querySelector('.cp-odds');
+    if (!descEl || !btn) return;
+    var desc = (descEl.value || '').trim();
+    if (!desc) { descEl.focus(); return; }
+    var identity = ensureIdentity();
+    if (!identity) return;
+    var fx = findFixture(fxId);
+    if (!fx) return;
+    var oddsRaw = (oddsEl && oddsEl.value) || '';
+    var odds = oddsRaw !== '' ? parseInt(oddsRaw, 10) : null;
+    if (odds != null && isNaN(odds)) odds = null;
+    var baseTrackId = fxId + '::custom::' + Date.now();
+    var scopedId = identity.name + '::' + baseTrackId;
+    var entry = {
+      trackId: scopedId, name: identity.name, fxId: fxId, marketKey: 'custom', side: '',
+      matchLabel: fx.home + ' vs ' + fx.away, league: fx.league, date: fx.date,
+      rec: desc, stars: null, odds: odds, stake: stakeForWin1(odds), status: 'pending', addedAt: Date.now()
+    };
+    var arr = loadTracked();
+    arr.push(entry);
+    saveTracked(arr);
+    renderTracker();
+    btn.disabled = true;
+    var origLabel = btn.textContent;
+    btn.textContent = 'Adding…';
+    var revertAdd = function(){
+      var arr2 = loadTracked().filter(function(t){ return t.trackId !== scopedId; });
+      saveTracked(arr2);
+      renderTracker();
+      btn.disabled = false;
+      btn.textContent = origLabel;
+    };
+    postToServer({action:'upsert', name:identity.name, pin:identity.pin, pick: entryToServerPick(entry)}).then(function(res){
+      if (!res || !res.ok) { revertAdd(); alert('Could not save: ' + ((res&&res.error)||'server error')); return; }
+      descEl.value = '';
+      if (oddsEl) oddsEl.value = '';
+      btn.disabled = false;
+      btn.textContent = 'Added ✓ — see Tracker tab';
+      setTimeout(function(){ btn.textContent = origLabel; }, 2000);
+    }).catch(function(){ revertAdd(); alert('Could not reach the tracker sheet -- check your connection and try again.'); });
+  }
+
   function parseAmericanOdds(rec){
     var m = rec && rec.match(/\(([+-]\d+)\)/);
     if (!m) return null;
