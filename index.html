@@ -1231,7 +1231,9 @@
     var identity = getIdentity();
     var fromVal = document.getElementById('tr-from') ? document.getElementById('tr-from').value : '';
     var toVal = document.getElementById('tr-to') ? document.getElementById('tr-to').value : '';
+    var filterActive = !!(fromVal || toVal);
     var arr = loadTracked().filter(function(e){
+      if (filterActive && !e.date) return false; // undated legacy entries shouldn't slip through a date filter
       if (fromVal && e.date && e.date < fromVal) return false;
       if (toVal && e.date && e.date > toVal) return false;
       return true;
