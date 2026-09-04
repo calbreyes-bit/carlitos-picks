@@ -1352,8 +1352,15 @@
     var filterActive = !!(fromVal || toVal);
     var arr = loadTracked().filter(function(e){
       if (filterActive && !e.date) return false; // undated legacy entries shouldn't slip through a date filter
-      if (fromVal && e.date && e.date < fromVal) return false;
-      if (toVal && e.date && e.date > toVal) return false;
+      // e.date is often a full ISO timestamp ("2026-09-04T04:00:00.000Z"), but the
+      // from/to inputs are plain "YYYY-MM-DD". Comparing the raw strings made any
+      // entry dated on the "to" boundary day sort as *after* it ("...T04:00..." >
+      // "2026-09-04"), so a "to = today" filter silently hid everything from today --
+      // which is most days almost entirely custom picks, since those are what Carlos
+      // adds and checks same-day. Compare on just the date portion instead.
+      var eDay = e.date ? e.date.slice(0, 10) : e.date;
+      if (fromVal && eDay && eDay < fromVal) return false;
+      if (toVal && eDay && eDay > toVal) return false;
       return true;
     }).sort(function(a,b){ return b.addedAt-a.addedAt; });
     var w=0,l=0,p=0, units=0;
