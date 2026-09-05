@@ -171,6 +171,13 @@
     font-size:11px; padding:4px 10px; cursor:pointer; font-weight:600; white-space:nowrap;
   }
   .track-btn.tracked{background:var(--accent); color:#fff;}
+  .market-actions{display:flex; flex-direction:column; align-items:stretch; gap:4px; flex:none; width:72px;}
+  .market-actions .track-btn{width:100%; text-align:center;}
+  .market-odds-input{
+    width:100%; box-sizing:border-box; padding:4px 5px; border-radius:7px; border:1px solid var(--border);
+    background:var(--bg); color:var(--text); font-size:11.5px; text-align:center; font-variant-numeric:tabular-nums;
+  }
+  .market-odds-input::placeholder{color:var(--dim);}
 
   .fullstats-toggle{
     width:100%; margin-top:10px; padding:9px; border-radius:9px; border:1px dashed var(--border);
@@ -586,6 +593,30 @@
     return '<div class="moves-row">'+box1+box2+'</div>';
   }
 
+  // Live current-market odds for a trackable market, straight from the API pull the
+  // backend already computes into fx.prices -- distinct from pick.rec's embedded
+  // "X or better" recommendation threshold. Returns null for markets with no live price
+  // history (dc/ah/best_bet -- api_football_odds.py doesn't pull those), same scope
+  // limitation as moveKeyFor()/fx.moves above.
+  function numOrNull(v){
+    if (v == null || v === '') return null;
+    var n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  }
+  function currentOddsFor(fx, marketKey, side, pick){
+    var p = fx.prices || {};
+    if (marketKey === 'match_total') return numOrNull(p.total_odds);
+    if (marketKey === 'team_total') return numOrNull(side === 'home' ? p.tt_home_odds : p.tt_away_odds);
+    if (marketKey === 'ml') return numOrNull(side === 'home' ? p.ml_home : p.ml_away);
+    if (marketKey === 'btts') {
+      var r = ((pick && pick.rec) || '').trim().toLowerCase();
+      if (r.indexOf('yes') === 0) return numOrNull(p.btts_yes);
+      if (r.indexOf('no') === 0) return numOrNull(p.btts_no);
+      return null;
+    }
+    return null;
+  }
+
   function marketRowHtml(fx, marketKey, side, pick, label){
     var trackId = fx.id + '::' + marketKey + (side?('::'+side):'');
     var tracked = isTracked(trackId);
@@ -604,13 +635,26 @@
         '</div>'+
       '</div>';
     }
+    // Odds box: lets you set/adjust the odds to track right here, instead of switching to
+    // the Tracker tab (Carlos, 2026-09-05). Pre-filled with the current live API odds when
+    // one exists for this market, falling back to the "or better" threshold baked into the
+    // rec text; once the pick is actually tracked it shows (and edits) the tracked odds.
+    var liveOdds = currentOddsFor(fx, marketKey, side, pick);
+    var trackedEntry = tracked ? findTrackedEntry(trackId) : null;
+    var oddsVal = trackedEntry ? trackedEntry.odds : (liveOdds != null ? liveOdds : parseAmericanOdds(pick.rec));
+    var oddsTitle = trackedEntry ? 'Tracked odds -- edit to update' : (liveOdds != null ? 'Current API odds -- edit before tracking if you got a different price' : 'Odds to track');
+    var oddsInputHtml = '<input type="number" step="1" inputmode="numeric" class="market-odds-input" placeholder="Odds" '+
+      'title="'+esc(oddsTitle)+'" data-oddsinput="'+esc(trackId)+'" value="'+(oddsVal!=null?esc(String(oddsVal)):'')+'">';
     return '<div class="market-row">'+labelHtml+
       '<div class="body">'+
         '<span class="rec">'+esc(pick.rec)+'</span> <span class="stars">'+esc(stars(pick.stars))+'</span>'+
         (pick.reason ? '<div class="reason">'+esc(pick.reason)+'</div>' : '')+
         moveLineHtml(fx, marketKey, side, pick)+
       '</div>'+
-      '<button class="track-btn'+(tracked?' tracked':'')+'" data-track="'+esc(trackId)+'" data-fx="'+esc(fx.id)+'" data-market="'+esc(marketKey)+'" data-side="'+esc(side||'')+'">'+(tracked?'Tracked':'Track')+'</button>'+
+      '<div class="market-actions">'+
+        oddsInputHtml+
+        '<button class="track-btn'+(tracked?' tracked':'')+'" data-track="'+esc(trackId)+'" data-fx="'+esc(fx.id)+'" data-market="'+esc(marketKey)+'" data-side="'+esc(side||'')+'">'+(tracked?'Tracked':'Track')+'</button>'+
+      '</div>'+
     '</div>';
   }
 
@@ -933,6 +977,17 @@
     }
   });
 
+  // Odds box on a market row: only meaningful once the pick is actually tracked (before
+  // that, the box's value is just read directly off it by toggleTrack() above). 'change'
+  // (not 'input') fires once the user leaves the field, same as the Tracker tab's own
+  // odds input.
+  document.addEventListener('change', function(e){
+    var oddsEl = e.target.closest('[data-oddsinput]');
+    if (oddsEl) {
+      updateOddsFromMarketRow(oddsEl.getAttribute('data-oddsinput'), oddsEl.value);
+    }
+  });
+
   // ---------- dropdowns ----------
   document.getElementById('f-league-btn').addEventListener('click', function(){ openPanel(document.getElementById('f-league-panel')); });
   document.getElementById('f-time-btn').addEventListener('click', function(){ openPanel(document.getElementById('f-time-panel')); });
@@ -1035,6 +1090,12 @@
     var scoped = id.name + '::' + baseTrackId;
     return loadTracked().some(function(t){ return t.trackId === scoped; });
   }
+  function findTrackedEntry(baseTrackId){
+    var id = getIdentity();
+    if (!id) return null;
+    var scoped = id.name + '::' + baseTrackId;
+    return loadTracked().filter(function(t){ return t.trackId === scoped; })[0] || null;
+  }
   function baseIdFromScoped(scopedId){
     return String(scopedId).split('::').slice(1).join('::');
   }
@@ -1114,10 +1175,21 @@
       arr.splice(idx,1);
       saveTracked(arr);
       syncTrackButtons(baseTrackId, false);
+      // Odds box reverts to whatever it'd show for an untracked pick -- the live API odds
+      // (or the "or better" threshold as a fallback) -- instead of continuing to show the
+      // now-removed tracked odds.
+      var fxUntrack = findFixture(fxId);
+      var pickUntrack = pickFor(fxUntrack, marketKey, side);
+      var liveUntrack = (fxUntrack && pickUntrack) ? currentOddsFor(fxUntrack, marketKey, side, pickUntrack) : null;
+      var defaultUntrack = liveUntrack != null ? liveUntrack : (pickUntrack ? parseAmericanOdds(pickUntrack.rec) : null);
+      var titleUntrack = liveUntrack != null ? 'Current API odds -- edit before tracking if you got a different price' : 'Odds to track';
+      syncOddsInputs(baseTrackId, defaultUntrack, titleUntrack);
       renderTracker();
       var revert = function(){
         var arr2 = loadTracked(); arr2.push(removed); saveTracked(arr2);
-        syncTrackButtons(baseTrackId, true); renderTracker();
+        syncTrackButtons(baseTrackId, true);
+        syncOddsInputs(baseTrackId, removed.odds, 'Tracked odds -- edit to update');
+        renderTracker();
       };
       postToServer({action:'delete', name:identity.name, pin:identity.pin, trackId: scopedId}).then(function(res){
         if (!res || !res.ok) { revert(); alert('Could not remove: ' + ((res&&res.error)||'server error')); }
@@ -1126,7 +1198,14 @@
       var fx = findFixture(fxId);
       var pick = pickFor(fx, marketKey, side);
       if (!fx || !pick) return;
-      var trackOdds = parseAmericanOdds(pick.rec);
+      // Use whatever's currently sitting in this row's own odds box (scoped to the row the
+      // button actually lives in -- a fixture can render a duplicate copy of this same row
+      // in both the Top Picks and Fixtures tabs) rather than always re-deriving the "or
+      // better" threshold: the box is pre-filled with the live API odds (or that threshold
+      // as a fallback) but the person may have typed the actual price they got.
+      var oddsInputEl = btn.closest('.market-row') && btn.closest('.market-row').querySelector('[data-oddsinput]');
+      var typedOdds = oddsInputEl && oddsInputEl.value !== '' ? parseFloat(oddsInputEl.value) : NaN;
+      var trackOdds = !isNaN(typedOdds) ? typedOdds : parseAmericanOdds(pick.rec);
       var defaultStake = stakeForWin1(trackOdds);
       var entry = {
         trackId: scopedId, name: identity.name, fxId: fxId, marketKey: marketKey, side: side,
@@ -1136,10 +1215,16 @@
       arr.push(entry);
       saveTracked(arr);
       syncTrackButtons(baseTrackId, true);
+      syncOddsInputs(baseTrackId, trackOdds, 'Tracked odds -- edit to update');
       renderTracker();
       var revertAdd = function(){
         var arr2 = loadTracked().filter(function(t){ return t.trackId !== scopedId; });
-        saveTracked(arr2); syncTrackButtons(baseTrackId, false); renderTracker();
+        saveTracked(arr2); syncTrackButtons(baseTrackId, false);
+        var liveRevert = currentOddsFor(fx, marketKey, side, pick);
+        var defaultRevert = liveRevert != null ? liveRevert : parseAmericanOdds(pick.rec);
+        var titleRevert = liveRevert != null ? 'Current API odds -- edit before tracking if you got a different price' : 'Odds to track';
+        syncOddsInputs(baseTrackId, defaultRevert, titleRevert);
+        renderTracker();
       };
       postToServer({action:'upsert', name:identity.name, pin:identity.pin, pick: entryToServerPick(entry)}).then(function(res){
         if (!res || !res.ok) { revertAdd(); alert('Could not save: ' + ((res&&res.error)||'server error')); }
@@ -1298,6 +1383,39 @@
     e.stake = stakeForWin1(e.odds); // re-size to win 1 unit at the odds you actually got
     saveTracked(arr); renderTracker();
     pushEntryUpdate(e, function(){ e.odds = prevOdds; e.stake = prevStake; saveTracked(arr); renderTracker(); });
+  }
+  // Same edit as updateOdds() above, but triggered from the odds box on a market row
+  // (Top Picks / Fixtures tabs) instead of the Tracker tab -- so adjusting the odds on an
+  // already-tracked pick no longer requires switching tabs (Carlos, 2026-09-05). Also
+  // mirrors the new value into any duplicate copy of this same row (a fixture can render
+  // once in Top Picks and again in Fixtures), the same duplicate-DOM situation
+  // syncTrackButtons already works around above.
+  function syncOddsInputs(baseTrackId, value, title){
+    var v = (value == null || value === '' || isNaN(value)) ? '' : String(value);
+    document.querySelectorAll('[data-oddsinput="'+baseTrackId+'"]').forEach(function(inp){
+      if (document.activeElement !== inp) inp.value = v; // don't clobber the box being typed in
+      if (title) inp.title = title;
+    });
+  }
+  function updateOddsFromMarketRow(baseTrackId, rawValue){
+    var identity = getIdentity();
+    if (!identity) return; // not tracked yet (or not signed in) -- nothing server-side to push
+    var scoped = identity.name + '::' + baseTrackId;
+    var arr = loadTracked();
+    var e = arr.find(function(x){ return x.trackId===scoped; });
+    if (!e) return; // this pick isn't tracked -- the box is just holding the pre-track default
+    var prevOdds = e.odds, prevStake = e.stake;
+    var v = String(rawValue).trim();
+    e.odds = v === '' ? null : parseFloat(v);
+    if (isNaN(e.odds)) e.odds = null;
+    e.stake = stakeForWin1(e.odds);
+    saveTracked(arr);
+    renderTracker(); // keep the Tracker tab's own copy in sync if it's open
+    syncOddsInputs(baseTrackId, e.odds);
+    pushEntryUpdate(e, function(){
+      e.odds = prevOdds; e.stake = prevStake; saveTracked(arr); renderTracker();
+      syncOddsInputs(baseTrackId, prevOdds);
+    });
   }
   function updateStatus(trackId, status){
     var arr = loadTracked();
