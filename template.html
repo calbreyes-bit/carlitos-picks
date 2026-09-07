@@ -220,6 +220,19 @@
   .fs-table td{padding:4px 4px; border-bottom:1px solid var(--border);}
   .fs-table td.k{color:var(--dim); width:46%;}
   .fs-table td.v{text-align:right; font-weight:600;}
+  /* Goal Distribution chart -- combines the "Scoring Profile" (cumulative Over N.5 %)
+     and "Goal Distribution (per team)" (exact goal-count histogram) raw-stat sections
+     into one at-a-glance bar+line chart, per team. Sits above both raw sections, which
+     stay in place below for the exact numbers (Carlos, 2026-09-07). */
+  .gdist-block{margin-bottom:14px;}
+  .gdist-legend{display:flex; flex-wrap:wrap; gap:14px; font-size:10.5px; color:var(--dim); margin-bottom:6px;}
+  .gdist-lg-item{display:flex; align-items:center; gap:5px;}
+  .gdist-lg-bar{display:inline-block; width:10px; height:10px; border-radius:2px; background:var(--accent); opacity:.55;}
+  .gdist-lg-line{display:inline-block; width:14px; height:2px; background:var(--amber);}
+  .gdist-card{margin-bottom:0;}
+  .gdist-svg{width:100%; height:112px; display:block;}
+  .gdist-axis-label{font-size:8.5px; fill:var(--dim);}
+  .gdist-empty{font-size:11.5px; color:var(--dim); padding:10px 0; text-align:center;}
 
   .empty{text-align:center; color:var(--dim); padding:40px 10px; font-size:13.5px;}
 
@@ -760,8 +773,118 @@
     '</div>';
   }
 
+  // ---- Goal Distribution chart: the "Scoring Profile" and "Goal Distribution (per
+  // team)" raw-stat sections both describe a team's own goal-scoring shape -- one as
+  // cumulative Over N.5 percentages, the other as an exact goal-count histogram. This
+  // renders both as one bar (exact count %) + line (cumulative Over N.5, derived from
+  // the same bars so the two always agree) chart per team, inserted above those two
+  // raw sections; the raw numbers stay below for reference (Carlos, 2026-09-07).
+  var GDIST_SCORED_LABELS = ['Scored 0 goals %','Scored 1 goal %','Scored 2 goals %','Scored 3 goals %','Scored 4 goals %','Scored 5+ goals %'];
+  var GDIST_CONCEDED_LABELS = ['Conceded 0 goals %','Conceded 1 goal %','Conceded 2 goals %','Conceded 3 goals %','Conceded 4 goals %','Conceded 5+ goals %'];
+  var GDIST_CATS = ['0','1','2','3','4','5+'];
+
+  function gdistPct(s){
+    if (s==null || s==='') return null;
+    var v = parseFloat(String(s).replace('%',''));
+    return isNaN(v) ? null : v;
+  }
+
+  function gdistBuildBars(map, labels, side){
+    return labels.map(function(lbl, i){
+      var row = map[lbl];
+      var raw = row ? row[side] : null;
+      return {label: lbl, cat: GDIST_CATS[i], val: gdistPct(raw)};
+    });
+  }
+
+  function gdistBarPath(x, w, yTop, yBase, r){
+    if (yBase - yTop < 0.5) return '';
+    var rr = Math.min(r, w/2, yBase - yTop);
+    return 'M'+x+','+yBase+
+      ' L'+x+','+(yTop+rr)+
+      ' Q'+x+','+yTop+' '+(x+rr)+','+yTop+
+      ' L'+(x+w-rr)+','+yTop+
+      ' Q'+(x+w)+','+yTop+' '+(x+w)+','+(yTop+rr)+
+      ' L'+(x+w)+','+yBase+' Z';
+  }
+
+  function gdistChartSvg(bars){
+    var W=300, H=112, padL=8, padR=8, padT=10, padB=20;
+    var n = bars.length;
+    var slotW = (W-padL-padR)/n;
+    var barW = slotW*0.56;
+    var yBase = padT + (H-padT-padB);
+    function yPos(v){ return padT + (1-(Math.max(0,Math.min(100,v||0)))/100)*(H-padT-padB); }
+    var barsSvg = bars.map(function(b,i){
+      var cx = padL + slotW*i + slotW/2;
+      var x = cx - barW/2;
+      if (b.val==null) return '';
+      var yTop = yPos(b.val);
+      var path = gdistBarPath(x, barW, yTop, yBase, 3);
+      if (!path) return '';
+      return '<path d="'+path+'" fill="var(--accent)" opacity="0.55"><title>'+esc(b.label)+': '+b.val+'%</title></path>';
+    }).join('');
+    var overs = [];
+    var cum = 100;
+    for (var i=0;i<n-1;i++){
+      cum -= (bars[i].val==null?0:bars[i].val);
+      overs.push(Math.max(0, Math.min(100, cum)));
+    }
+    var hasLine = bars.slice(0,n-1).some(function(b){ return b.val!=null; });
+    var linePts = overs.map(function(v,i){
+      var cx = padL + slotW*i + slotW/2;
+      return {x:cx, y:yPos(v), v:v};
+    });
+    var polyline = hasLine ? '<polyline points="'+linePts.map(function(p){return p.x+','+p.y;}).join(' ')+'" fill="none" stroke="var(--amber)" stroke-width="2" vector-effect="non-scaling-stroke"/>' : '';
+    var dots = hasLine ? linePts.map(function(p,i){
+      return '<circle cx="'+p.x+'" cy="'+p.y+'" r="2.6" fill="var(--amber)"><title>Over '+i+'.5: '+p.v+'%</title></circle>';
+    }).join('') : '';
+    var axisLabels = bars.map(function(b,i){
+      var cx = padL + slotW*i + slotW/2;
+      return '<text x="'+cx+'" y="'+(H-4)+'" text-anchor="middle" class="gdist-axis-label">'+esc(b.cat)+'</text>';
+    }).join('');
+    var baseline = '<line x1="'+padL+'" y1="'+yBase+'" x2="'+(W-padR)+'" y2="'+yBase+'" class="tr-chart-baseline"/>';
+    return '<svg viewBox="0 0 '+W+' '+H+'" class="gdist-svg">'+baseline+barsSvg+polyline+dots+axisLabels+'</svg>';
+  }
+
+  function gdistTeamCardHtml(teamName, teamLogo, bars, hasAny){
+    var body = hasAny ? gdistChartSvg(bars) : '<div class="gdist-empty">No distribution data</div>';
+    return '<div class="moves-overview gdist-card">'+
+        '<h4>'+badge(teamName, teamLogo, 'sm')+' '+esc(teamName)+'</h4>'+
+        body+
+      '</div>';
+  }
+
+  function gdistBlockHtml(title, fx, map, labels){
+    var hBars = gdistBuildBars(map, labels, 'home');
+    var aBars = gdistBuildBars(map, labels, 'away');
+    var hHas = hBars.some(function(b){ return b.val!=null; });
+    var aHas = aBars.some(function(b){ return b.val!=null; });
+    if (!hHas && !aHas) return '';
+    return '<div class="fs-section gdist-block">'+
+        '<h5>'+esc(title)+'</h5>'+
+        '<div class="gdist-legend"><span class="gdist-lg-item"><span class="gdist-lg-bar"></span>Exact goal count (% of matches)</span><span class="gdist-lg-item"><span class="gdist-lg-line"></span>Cumulative Over N.5</span></div>'+
+        '<div class="moves-row">'+
+          gdistTeamCardHtml(fx.home, fx.homeLogo, hBars, hHas)+
+          gdistTeamCardHtml(fx.away, fx.awayLogo, aBars, aHas)+
+        '</div>'+
+      '</div>';
+  }
+
+  function goalDistChartHtml(fx){
+    var sec = (fx.full||[]).find(function(s){ return s.title === 'Goal Distribution (per team)'; });
+    if (!sec || !sec.items || !sec.items.length) return '';
+    var map = {};
+    sec.items.forEach(function(it){ map[it[0]] = {home: it[1], away: it[2]}; });
+    var scored = gdistBlockHtml('Goals Scored – Distribution vs. Cumulative', fx, map, GDIST_SCORED_LABELS);
+    var conceded = gdistBlockHtml('Goals Conceded – Distribution vs. Cumulative', fx, map, GDIST_CONCEDED_LABELS);
+    return scored + conceded;
+  }
+
   function fullStatsHtml(fx){
     if (!fx.full || !fx.full.length) return '<div style="font-size:12px;color:var(--dim);">No additional stats for this fixture.</div>';
+    var chart = goalDistChartHtml(fx);
+    var chartInserted = false;
     return fx.full.map(function(sec){
       var rows = sec.items.map(function(it){
         if (sec.kind==='match') {
@@ -769,7 +892,12 @@
         }
         return '<tr><td class="k">'+esc(it[0])+'</td><td class="v">'+esc(it[1]||'–')+' <span style="opacity:.5">/</span> '+esc(it[2]||'–')+'</td></tr>';
       }).join('');
-      return '<div class="fs-section"><h5>'+esc(sec.title)+'</h5><table class="fs-table">'+rows+'</table></div>';
+      var html = '<div class="fs-section"><h5>'+esc(sec.title)+'</h5><table class="fs-table">'+rows+'</table></div>';
+      if (!chartInserted && chart && (sec.title === 'Scoring Profile' || sec.title === 'Goal Distribution (per team)')) {
+        html = chart + html;
+        chartInserted = true;
+      }
+      return html;
     }).join('');
   }
 
