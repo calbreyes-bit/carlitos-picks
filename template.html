@@ -504,6 +504,16 @@
     if (isNaN(d)) return dateStr;
     return d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
   }
+  // Dedicated MM-DD-YYYY formatter, scoped to the Last 10 Results cards only (per
+  // Carlos's explicit choice -- every other date on the dashboard keeps fmtDay()'s
+  // "Sun, Sep 6" style). Same full-ISO-timestamp tolerance as fmtDay().
+  function fmtDayMDY(dateStr){
+    if(!dateStr) return '';
+    var datePart = String(dateStr).slice(0, 10);
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
+    if (!m) return dateStr;
+    return m[2] + '-' + m[3] + '-' + m[1];
+  }
   function stars(v){
     if (v==null) return '';
     var full = Math.floor(v), half = (v - full) >= 0.5;
@@ -789,7 +799,7 @@
     var scoreStr = (item.scoreFor!=null && item.scoreAgainst!=null) ? (item.scoreFor+'–'+item.scoreAgainst) : '–';
     var resKey = (item.result==='W' || item.result==='D' || item.result==='L') ? item.result : '';
     return '<div class="last10-item">'+
-        '<span class="last10-date">'+esc(fmtDay(item.date))+'</span>'+
+        '<span class="last10-date">'+esc(fmtDayMDY(item.date))+'</span>'+
         '<span class="last10-ha">'+(item.isHome?'H':'A')+'</span>'+
         '<span class="last10-opp">'+badge(oppName, opp.logo, 'sm')+'<span>'+esc(oppName)+'</span></span>'+
         '<span class="last10-score">'+esc(scoreStr)+'</span>'+
