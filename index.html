@@ -495,7 +495,12 @@
   }
   function fmtDay(dateStr){
     if(!dateStr) return '';
-    var d = new Date(dateStr + 'T12:00:00');
+    // Accepts either a plain "YYYY-MM-DD" date or a full ISO timestamp (e.g. the raw
+    // fixture_date values the last10 cards read straight from soccer.fixtures) -- take
+    // just the date portion either way so a timestamp never leaks into the display as
+    // raw text via the isNaN(d) fallback below.
+    var datePart = String(dateStr).slice(0, 10);
+    var d = new Date(datePart + 'T12:00:00');
     if (isNaN(d)) return dateStr;
     return d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
   }
