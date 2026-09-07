@@ -136,6 +136,10 @@
   .last10-opp span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .last10-score{flex:none; font-variant-numeric:tabular-nums; font-weight:600; width:34px; text-align:center;}
   .last10-empty{font-size:11px; color:var(--dim);}
+  .combo-chip{
+    display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase;
+    color:var(--amber); background:var(--amber-bg); border-radius:20px; padding:1px 6px; margin-left:5px; vertical-align:middle;
+  }
 
   .market-row{
     display:flex; justify-content:space-between; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border);
@@ -1640,7 +1644,7 @@
 
     document.getElementById('trackerList').innerHTML = arr.length ? arr.map(function(e){
       var mine = !!(identity && e.name === identity.name);
-      var head = '<div class="top"><div><div class="rec">'+esc(e.rec)+'</div><div class="match">'+esc(e.matchLabel)+' · '+esc(e.league)+' · '+esc(fmtDay(e.date))+' · '+esc(e.name||'?')+'</div></div>'+
+      var head = '<div class="top"><div><div class="rec">'+esc(e.rec)+comboChipHtml(e)+'</div><div class="match">'+esc(e.matchLabel)+' · '+esc(e.league)+' · '+esc(fmtDay(e.date))+' · '+esc(e.name||'?')+'</div></div>'+
         (mine ? '<button class="remove-btn" data-remove="'+esc(e.trackId)+'">✕</button>' : '')+
       '</div>';
       if (!mine) {
@@ -1697,6 +1701,27 @@
   // pick's profit.
   var MARKET_KEY_LABELS = {best_bet:'Best Bet', match_total:'Match Total', btts:'BTTS', team_total:'Team Total', ml:'ML', dc:'DC', ah:'AH', custom:'Custom'};
   function marketKeyLabel(mk){ return MARKET_KEY_LABELS[mk] || (mk || 'Unknown'); }
+
+  // Flags a custom pick as a stacked combo (e.g. "BTTS Yes and Over 2.5", "X ML and Y TT")
+  // vs. a single-condition substitute (e.g. a plain "Over 2.5" typed in because the book
+  // didn't carry the model's exact line). Added after Carlos's own analysis turned up a
+  // real split: single-condition customs were +1.29u/57.5% hit, while combo customs were
+  // -11.18u/36% hit, across the same 70-pick window -- combos are carrying essentially all
+  // of the Custom category's losses. Scoped to marketKey==='custom' only -- structured
+  // market rec strings never contain "and" in practice, and the label has no meaning
+  // there anyway.
+  function isComboPick(e){
+    return !!(e && e.marketKey === 'custom' && /\band\b/i.test(e.rec || ''));
+  }
+  var COMBO_BREAKDOWN_LABELS = {custom_combo:'Custom (combo)', custom_single:'Custom (single)'};
+  function comboBreakdownKey(e){
+    if (e.marketKey !== 'custom') return e.marketKey;
+    return isComboPick(e) ? 'custom_combo' : 'custom_single';
+  }
+  function comboBreakdownLabel(k){ return COMBO_BREAKDOWN_LABELS[k] || marketKeyLabel(k); }
+  function comboChipHtml(e){
+    return isComboPick(e) ? ' <span class="combo-chip" title="Stacked combo pick (e.g. BTTS + Over) -- historically your weakest custom-pick pattern">combo</span>' : '';
+  }
 
   // Carlos's own addition beyond the brief: Match Day Board (unlike TJ Picks, which only
   // ever has one person's picks) lets multiple named people track picks against the same
@@ -1934,7 +1959,7 @@
       return '<tr>'+
         '<td>'+esc(fmtDay(eDay))+'</td>'+
         '<td>'+esc(e.league||'')+'</td>'+
-        '<td>'+esc(e.rec||'')+'<div class="pk-match">'+esc(e.matchLabel||'')+'</div></td>'+
+        '<td>'+esc(e.rec||'')+comboChipHtml(e)+'<div class="pk-match">'+esc(e.matchLabel||'')+'</div></td>'+
         '<td>'+esc(marketKeyLabel(e.marketKey))+'</td>'+
         '<td>'+esc(e.name||'?')+'</td>'+
         '<td><span class="status-chip '+esc(e.status)+'">'+esc(STATUS_LABELS[e.status]||e.status)+'</span></td>'+
@@ -1947,7 +1972,7 @@
     var arr = perfCurrentFiltered();
     renderPerfHero(arr);
     renderPerfBreakdown('perf-league-body', arr, function(e){ return e.league; }, function(k){ return k; });
-    renderPerfBreakdown('perf-market-body', arr, function(e){ return e.marketKey; }, marketKeyLabel);
+    renderPerfBreakdown('perf-market-body', arr, comboBreakdownKey, comboBreakdownLabel);
     renderPerfChart(arr);
     renderPerfDetails(arr);
   }
