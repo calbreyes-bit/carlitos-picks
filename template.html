@@ -123,6 +123,20 @@
   .h2h-last5{display:flex; flex-wrap:wrap; gap:5px;}
   .h2h-chip{background:var(--card); border:1px solid var(--border); border-radius:6px; padding:2px 6px; font-size:10.5px;}
 
+  /* Per-team "last 10 results" cards -- reuses .moves-row/.moves-overview for the
+     stack-on-phone/side-by-side-at-480px card layout and .form-dot for the W/D/L chip,
+     same visual language as the Line Moves section and the form-dots row above. */
+  .last10-card h4{display:flex; align-items:center; gap:5px; text-transform:none; letter-spacing:normal;}
+  .last10-list{display:flex; flex-direction:column; gap:2px;}
+  .last10-item{display:flex; align-items:center; gap:6px; padding:3px 0; border-bottom:1px solid var(--border); font-size:11.5px;}
+  .last10-item:last-child{border-bottom:none;}
+  .last10-date{flex:none; width:52px; color:var(--dim); font-size:10.5px;}
+  .last10-ha{flex:none; width:14px; text-align:center; font-size:9.5px; font-weight:700; color:var(--dim);}
+  .last10-opp{flex:1 1 0; min-width:0; display:flex; align-items:center; gap:5px; overflow:hidden;}
+  .last10-opp span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .last10-score{flex:none; font-variant-numeric:tabular-nums; font-weight:600; width:34px; text-align:center;}
+  .last10-empty{font-size:11px; color:var(--dim);}
+
   .market-row{
     display:flex; justify-content:space-between; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border);
   }
@@ -211,7 +225,7 @@
   .tsum .box .n{font-size:18px; font-weight:800;}
   .tsum .box .l{font-size:10.5px; color:var(--dim); text-transform:uppercase;}
   .tr-filters{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:10px;}
-  .tr-filters .tr-preset-btn{background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer;}
+  .tr-filters .tr-preset-btn, .tr-filters .perf-preset-btn{background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer;}
   .tr-filters .tr-datelabel{display:flex; align-items:center; gap:4px; font-size:12px; color:var(--dim); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:5px 8px;}
   .tr-filters .tr-datelabel input[type=date]{border:none; background:none; color:var(--text); font-size:12.5px; padding:0; max-width:112px;}
   .tr-chart-wrap{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 10px 6px 10px; margin-bottom:14px;}
@@ -233,6 +247,28 @@
   .remove-btn{background:none; border:none; color:var(--dim); font-size:16px; cursor:pointer; padding:0 2px;}
   .identity-row{font-size:12px; color:var(--dim); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px 12px;}
   .identity-row b{color:var(--text);}
+
+  /* ---------- Performance tab (reuses .tsum/.tr-filters/.tr-chart-wrap/.dropdown-* from
+     the Tracker/Fixtures tabs above -- these rules only cover what's genuinely new). ---------- */
+  .tsum.perf-hero{flex-wrap:wrap;}
+  .tsum.perf-hero .box{flex:1 1 28%; min-width:84px;}
+  .perf-bd-section{margin-bottom:16px;}
+  .perf-bd-section h5{font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--dim); margin:0 0 6px 0;}
+  .perf-table{width:100%; border-collapse:collapse; font-size:12px;}
+  .perf-table th, .perf-table td{padding:6px 5px; border-bottom:1px solid var(--border); text-align:left;}
+  .perf-table th{color:var(--dim); font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap;}
+  .perf-table td.num, .perf-table th.num{text-align:right; font-variant-numeric:tabular-nums;}
+  .perf-table td.units.pos, .perf-table th.units.pos{color:var(--green);}
+  .perf-table td.units.neg{color:var(--red);}
+  .perf-table tbody tr:last-child td{border-bottom:none;}
+  .perf-table .pk-match{font-size:11px; color:var(--dim); margin-top:1px;}
+  .perf-table-wrap{overflow-x:auto;}
+  .perf-details-table th.sortable{cursor:pointer; user-select:none;}
+  .perf-details-table th.sortable:hover{color:var(--text);}
+  .perf-details-table th.sortable .sort-arrow{display:inline-block; width:8px; margin-left:2px; font-size:8px; opacity:0; color:var(--accent);}
+  .perf-details-table th.sortable.sort-active{color:var(--text);}
+  .perf-details-table th.sortable.sort-active .sort-arrow{opacity:1;}
+  .perf-empty{font-size:12.5px; color:var(--dim); text-align:center; padding:14px 0;}
   .identity-switch{background:none; border:none; color:var(--accent); font-size:12px; font-weight:600; cursor:pointer; padding:0;}
   .tcard.readonly{opacity:.85;}
   .row2.readonly{gap:10px; font-size:12px; color:var(--dim); align-items:center;}
@@ -275,6 +311,7 @@
     <button data-tab="top" class="active">Top Picks</button>
     <button data-tab="fixtures">Fixtures</button>
     <button data-tab="tracker">Tracker</button>
+    <button data-tab="performance">Performance</button>
   </nav>
 </header>
 
@@ -328,6 +365,43 @@
     <div class="tr-chart-wrap" id="tr-chart-wrap"></div>
     <div id="identityRow" class="identity-row"></div>
     <div id="trackerList"></div>
+  </section>
+
+  <section class="tab" id="tab-performance">
+    <div class="filters" id="perf-msel-mount"></div>
+    <div class="tr-filters">
+      <button class="perf-preset-btn" data-perf-preset="all">All</button>
+      <button class="perf-preset-btn" data-perf-preset="7d">7D</button>
+      <button class="perf-preset-btn" data-perf-preset="30d">30D</button>
+      <button class="perf-preset-btn" data-perf-preset="month">This month</button>
+      <label class="tr-datelabel">From <input type="date" id="perf-from"></label>
+      <label class="tr-datelabel">To <input type="date" id="perf-to"></label>
+    </div>
+    <div class="tsum perf-hero" id="perf-hero"></div>
+    <div class="tr-chart-wrap" id="perf-chart-wrap"></div>
+    <div class="perf-bd-section">
+      <h5>By League</h5>
+      <table class="perf-table"><tbody id="perf-league-body"></tbody></table>
+    </div>
+    <div class="perf-bd-section">
+      <h5>By Bet Type</h5>
+      <table class="perf-table"><tbody id="perf-market-body"></tbody></table>
+    </div>
+    <div class="perf-bd-section perf-table-wrap">
+      <h5>All Tracked Picks</h5>
+      <table class="perf-table perf-details-table">
+        <thead><tr>
+          <th class="sortable" data-sort="date">Date<span class="sort-arrow"></span></th>
+          <th class="sortable" data-sort="league">League<span class="sort-arrow"></span></th>
+          <th class="sortable" data-sort="match">Pick<span class="sort-arrow"></span></th>
+          <th class="sortable" data-sort="marketKey">Type<span class="sort-arrow"></span></th>
+          <th class="sortable" data-sort="name">By<span class="sort-arrow"></span></th>
+          <th class="sortable" data-sort="status">Status<span class="sort-arrow"></span></th>
+          <th class="sortable num" data-sort="units">Units<span class="sort-arrow"></span></th>
+        </tr></thead>
+        <tbody id="perf-details-body"></tbody>
+      </table>
+    </div>
   </section>
 </main>
 
@@ -399,8 +473,17 @@
     var cls = 'badge' + (size ? ' ' + size : '');
     var bg = hashColor(name||'?');
     if (logoUrl) {
+      // Bugfix (found while testing the last10 cards' badge() fallback against a
+      // sandbox with no network, i.e. every <img> 404s): innerHTML on the SAME element
+      // as the very next statement detaches the just-inserted text node's ancestor
+      // chain in a way that's harmless, but detaches the <img> ("this") itself from its
+      // parent first -- so the old order's second statement (this.parentElement.style...)
+      // was reading .style off a now-null parentElement and throwing, silently leaving
+      // the fallback badge with no background color. Setting the style first (while
+      // still attached) then swapping in the initials text after fixes it with the
+      // exact same intended end state.
       return '<span class="'+cls+'" style="background:'+bg+'"><img src="'+esc(logoUrl)+'" alt="" loading="lazy" ' +
-             'onerror="this.parentElement.innerHTML=\''+esc(initials(name))+'\';this.parentElement.style.background=\''+bg+'\';"></span>';
+             'onerror="this.parentElement.style.background=\''+bg+'\';this.parentElement.innerHTML=\''+esc(initials(name))+'\';"></span>';
     }
     return '<span class="'+cls+'" style="background:'+bg+'">'+esc(initials(name))+'</span>';
   }
@@ -693,6 +776,41 @@
     return '<div class="snapshot-grid">'+col(fx.home, h, fx.homeLogo)+col(fx.away, a, fx.awayLogo)+'</div>' + h2hHtml;
   }
 
+  // ---- per-team "last 10 results" (any opponent, not head-to-head) -- added alongside
+  // the W/D/L form-dots + H2H section above, not a replacement for either.
+  function last10ItemHtml(item){
+    var opp = item.opponent || {};
+    var oppName = opp.name || 'Unknown';
+    var scoreStr = (item.scoreFor!=null && item.scoreAgainst!=null) ? (item.scoreFor+'–'+item.scoreAgainst) : '–';
+    var resKey = (item.result==='W' || item.result==='D' || item.result==='L') ? item.result : '';
+    return '<div class="last10-item">'+
+        '<span class="last10-date">'+esc(fmtDay(item.date))+'</span>'+
+        '<span class="last10-ha">'+(item.isHome?'H':'A')+'</span>'+
+        '<span class="last10-opp">'+badge(oppName, opp.logo, 'sm')+'<span>'+esc(oppName)+'</span></span>'+
+        '<span class="last10-score">'+esc(scoreStr)+'</span>'+
+        (resKey ? '<span class="form-dot '+resKey+'">'+resKey+'</span>' : '')+
+      '</div>';
+  }
+
+  function last10CardHtml(teamName, teamLogo, items){
+    var body = (items && items.length)
+      ? '<div class="last10-list">'+items.map(last10ItemHtml).join('')+'</div>'
+      : '<div class="last10-empty">No recent results</div>';
+    return '<div class="moves-overview last10-card">'+
+        '<h4>'+badge(teamName, teamLogo, 'sm')+' '+esc(teamName)+' – Last 10</h4>'+
+        body+
+      '</div>';
+  }
+
+  function last10Html(fx){
+    var snap = fx.snapshot || {};
+    var h = snap.home || {}, a = snap.away || {};
+    return '<div class="moves-row">'+
+        last10CardHtml(fx.home, fx.homeLogo, h.last10 || [])+
+        last10CardHtml(fx.away, fx.awayLogo, a.last10 || [])+
+      '</div>';
+  }
+
   function marketsHtml(fx){
     var out = '';
     out += marketRowHtml(fx, 'best_bet', null, fx.best_bet, 'Best Bet');
@@ -729,6 +847,7 @@
       '</div>'+
       '<div class="expand" id="expand-'+esc(fx.id)+'">'+
         snapshotHtml(fx)+
+        last10Html(fx)+
         movesOverviewHtml(fx)+
         marketsHtml(fx)+
         '<div class="custom-pick">'+
@@ -1157,6 +1276,8 @@
       saveTracked(data.picks.map(serverRowToEntry));
       renderTracker();
       resyncAllTrackButtons();
+      buildPerfFilters(); // fresh sync can introduce a league/type/name the Performance filters haven't seen yet
+      renderPerformance();
     }).catch(function(){ /* offline or unreachable -- keep showing the last-synced cache */ });
   }
 
@@ -1315,7 +1436,13 @@
     }
     var byDate = {};
     settled.forEach(function(e){
-      var d = e.date || '';
+      // Bugfix (found while building the Performance tab's own chart against the same
+      // data): e.date is often a full ISO timestamp, not a plain date (see the comment
+      // on the date-range filter above) -- grouping by the raw value produced a distinct
+      // "day" per exact timestamp, and later new Date(d+'T12:00:00') on one of those
+      // turned into an invalid concatenated string, NaN-ing the whole chart. Slice to
+      // the date portion first, same as the date-range filter already does.
+      var d = e.date ? String(e.date).slice(0, 10) : '';
       if (!d) return;
       byDate[d] = (byDate[d] || 0) + profitFor(e);
     });
@@ -1545,6 +1672,285 @@
   document.getElementById('tr-to').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
   document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
+  // ---------- Performance tab ----------
+  // Pure front end, same data already loaded for the Tracker tab above (loadTracked()) --
+  // no new backend query. Everything here (hero tiles, breakdowns, chart, details table)
+  // reads through one shared perfCurrentFiltered(), same architecture as TJ Picks'
+  // currentFiltered(): one filtered array feeds every view, no view keeps its own filter
+  // state. profitFor()/stakeForWin1() above are reused as-is for the units math rather
+  // than recomputed here, so Tracker and Performance can never silently disagree on a
+  // pick's profit.
+  var MARKET_KEY_LABELS = {best_bet:'Best Bet', match_total:'Match Total', btts:'BTTS', team_total:'Team Total', ml:'ML', dc:'DC', ah:'AH', custom:'Custom'};
+  function marketKeyLabel(mk){ return MARKET_KEY_LABELS[mk] || (mk || 'Unknown'); }
+
+  // Carlos's own addition beyond the brief: Match Day Board (unlike TJ Picks, which only
+  // ever has one person's picks) lets multiple named people track picks against the same
+  // board, so a "Tracked by" filter -- defaulting to everyone selected -- is added here
+  // alongside the requested League and Bet Type filters.
+  var PERF_LEAGUES_ALL = [], PERF_MARKETS_ALL = [], PERF_NAMES_ALL = [];
+  var perfLeagueSel = new Set(), perfMarketSel = new Set(), perfNameSel = new Set();
+  var perfSort = {key:'date', dir:'desc'};
+
+  function passesPerfMultiFilter(selected, allOptions, value){
+    // nothing checked => no restriction on that dimension, same convention as the
+    // Fixtures tab's League/Kickoff filters (see openPanel/closeAllPanels above).
+    if (!selected.size) return true;
+    return selected.has(value);
+  }
+
+  // Generic checkbox-dropdown filter, built from the exact same .dropdown-btn/.dropdown-panel
+  // markup and .filters/.scrim/openPanel()/closeAllPanels() machinery the Fixtures tab's
+  // League/Kickoff filters already use above -- not a new filter widget.
+  function buildPerfDropdown(mountEl, label, options, selectedSet, labelFor, onChange){
+    selectedSet.clear();
+    options.forEach(function(o){ selectedSet.add(o); }); // default: everything selected
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'dropdown-btn';
+    var panel = document.createElement('div');
+    panel.className = 'dropdown-panel';
+    document.body.appendChild(panel);
+    function updateCount(){
+      var c = btn.querySelector('.count');
+      c.textContent = (selectedSet.size && selectedSet.size < options.length) ? '('+selectedSet.size+')' : '';
+    }
+    function renderPanel(){
+      panel.innerHTML = '<div class="actions"><button type="button" data-all>Select all</button><button type="button" data-clear>Clear</button></div>'+
+        '<div>'+options.map(function(o){
+          return '<label><input type="checkbox" value="'+esc(o)+'" '+(selectedSet.has(o)?'checked':'')+'> '+esc(labelFor(o))+'</label>';
+        }).join('')+'</div>'+
+        '<button type="button" class="backdrop-close" data-close>Done</button>';
+      panel.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+        cb.addEventListener('change', function(){
+          if (cb.checked) selectedSet.add(cb.value); else selectedSet.delete(cb.value);
+          updateCount(); onChange();
+        });
+      });
+      panel.querySelector('[data-all]').addEventListener('click', function(){
+        options.forEach(function(o){ selectedSet.add(o); });
+        renderPanel(); updateCount(); onChange();
+      });
+      panel.querySelector('[data-clear]').addEventListener('click', function(){
+        selectedSet.clear();
+        renderPanel(); updateCount(); onChange();
+      });
+      panel.querySelector('[data-close]').addEventListener('click', closeAllPanels);
+    }
+    btn.innerHTML = esc(label)+' <span class="count"></span>';
+    btn.addEventListener('click', function(){ openPanel(panel); });
+    mountEl.appendChild(btn);
+    renderPanel();
+    updateCount();
+  }
+
+  function buildPerfFilters(){
+    var arr = loadTracked();
+    PERF_LEAGUES_ALL = Array.from(new Set(arr.map(function(e){ return e.league; }).filter(Boolean))).sort();
+    PERF_MARKETS_ALL = Array.from(new Set(arr.map(function(e){ return e.marketKey; }).filter(Boolean))).sort();
+    PERF_NAMES_ALL = Array.from(new Set(arr.map(function(e){ return e.name; }).filter(Boolean))).sort();
+    var mount = document.getElementById('perf-msel-mount');
+    mount.innerHTML = '';
+    buildPerfDropdown(mount, 'League', PERF_LEAGUES_ALL, perfLeagueSel, function(o){ return o; }, renderPerformance);
+    buildPerfDropdown(mount, 'Bet Type', PERF_MARKETS_ALL, perfMarketSel, marketKeyLabel, renderPerformance);
+    buildPerfDropdown(mount, 'Tracked by', PERF_NAMES_ALL, perfNameSel, function(o){ return o; }, renderPerformance);
+  }
+
+  function perfCurrentFiltered(){
+    var from = document.getElementById('perf-from').value;
+    var to = document.getElementById('perf-to').value;
+    return loadTracked().filter(function(e){
+      var eDay = e.date ? String(e.date).slice(0, 10) : '';
+      if (from && (!eDay || eDay < from)) return false;
+      if (to && (!eDay || eDay > to)) return false;
+      if (!passesPerfMultiFilter(perfLeagueSel, PERF_LEAGUES_ALL, e.league)) return false;
+      if (!passesPerfMultiFilter(perfMarketSel, PERF_MARKETS_ALL, e.marketKey)) return false;
+      if (!passesPerfMultiFilter(perfNameSel, PERF_NAMES_ALL, e.name)) return false;
+      return true;
+    });
+  }
+
+  function applyPerfPreset(name){
+    var today = todayStr();
+    var from = '', to = '';
+    if (name === '7d') { from = addDaysStr(today, -6); to = today; }
+    else if (name === '30d') { from = addDaysStr(today, -29); to = today; }
+    else if (name === 'month') { from = today.slice(0,8)+'01'; to = today; }
+    document.getElementById('perf-from').value = from;
+    document.getElementById('perf-to').value = to;
+    renderPerformance();
+  }
+
+  function fmtUnits(n){ return (n>=0?'+':'')+n.toFixed(2); }
+  function unitsClass(n){ return n > 0.0001 ? 'pos' : (n < -0.0001 ? 'neg' : ''); }
+
+  function renderPerfHero(arr){
+    var w=0,l=0,p=0,pending=0,units=0;
+    arr.forEach(function(e){
+      if (e.status==='won') w+=1;
+      else if (e.status==='half_won') w+=0.5;
+      else if (e.status==='lost') l+=1;
+      else if (e.status==='half_lost') l+=0.5;
+      else if (e.status==='push') p+=1;
+      else pending+=1;
+      units += profitFor(e);
+    });
+    function fmtRec(n){ return (n % 1 === 0) ? String(n) : n.toFixed(1); }
+    var decided = w+l;
+    var hitRate = decided ? Math.round(100*w/decided)+'%' : '–';
+    document.getElementById('perf-hero').innerHTML =
+      '<div class="box"><div class="n">'+fmtRec(w)+'-'+fmtRec(l)+'-'+fmtRec(p)+'</div><div class="l">Record</div></div>'+
+      '<div class="box"><div class="n">'+hitRate+'</div><div class="l">Hit rate</div></div>'+
+      '<div class="box"><div class="n">'+arr.length+'</div><div class="l">Picks tracked</div></div>'+
+      '<div class="box"><div class="n">'+pending+'</div><div class="l">Pending</div></div>'+
+      '<div class="box"><div class="n '+unitsClass(units)+'">'+fmtUnits(units)+'</div><div class="l">Net units</div></div>';
+  }
+
+  function renderPerfBreakdown(bodyId, arr, keyFn, labelFn){
+    var byKey = {};
+    arr.forEach(function(e){
+      var k = keyFn(e) || 'Unknown';
+      byKey[k] = byKey[k] || {picks:0, w:0, l:0, units:0};
+      var b = byKey[k];
+      b.picks += 1;
+      if (e.status==='won') b.w += 1;
+      else if (e.status==='half_won') b.w += 0.5;
+      else if (e.status==='lost') b.l += 1;
+      else if (e.status==='half_lost') b.l += 0.5;
+      b.units += profitFor(e);
+    });
+    var rows = Object.keys(byKey).map(function(k){
+      var b = byKey[k];
+      var decided = b.w + b.l;
+      return {key:k, picks:b.picks, w:b.w, l:b.l, units:b.units, hitRate: decided ? b.w/decided : null};
+    }).sort(function(a,b){ return b.units - a.units; }); // net units descending -- Carlos cares about profit first
+    var body = document.getElementById(bodyId);
+    if (!rows.length) { body.innerHTML = '<tr><td colspan="4"><div class="perf-empty">No tracked picks in range.</div></td></tr>'; return; }
+    body.innerHTML = rows.map(function(r){
+      return '<tr>'+
+        '<td>'+esc(labelFn(r.key))+'</td>'+
+        '<td class="num">'+r.picks+'</td>'+
+        '<td class="num">'+(r.hitRate!=null ? Math.round(r.hitRate*100)+'% ('+(r.w%1===0?r.w:r.w.toFixed(1))+'-'+(r.l%1===0?r.l:r.l.toFixed(1))+')' : '–')+'</td>'+
+        '<td class="num units '+unitsClass(r.units)+'">'+fmtUnits(r.units)+'</td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  function renderPerfChart(arr){
+    var wrap = document.getElementById('perf-chart-wrap');
+    var settled = arr.filter(function(e){ return e.status && e.status !== 'pending'; });
+    if (!settled.length) { wrap.innerHTML = '<div class="tr-chart-empty">No settled picks in this period.</div>'; return; }
+    var byDate = {};
+    settled.forEach(function(e){
+      var d = e.date ? String(e.date).slice(0,10) : '';
+      if (!d) return;
+      byDate[d] = (byDate[d] || 0) + profitFor(e);
+    });
+    var dates = Object.keys(byDate).sort();
+    if (!dates.length) { wrap.innerHTML = '<div class="tr-chart-empty">No settled picks in this period.</div>'; return; }
+    var cum = 0;
+    var pts = dates.map(function(d){ cum += byDate[d]; return {date:d, val:cum}; });
+    if (pts.length === 1) {
+      var v = pts[0].val;
+      wrap.innerHTML = '<div class="tr-chart-empty">'+esc(fmtDay(pts[0].date))+': '+fmtUnits(v)+'u (only one day of activity)</div>';
+      return;
+    }
+    var W=300, H=100, padL=4, padR=4, padT=8, padB=8;
+    var minTs = new Date(pts[0].date+'T12:00:00').getTime();
+    var maxTs = new Date(pts[pts.length-1].date+'T12:00:00').getTime();
+    var xSpan = Math.max(1, maxTs-minTs);
+    var vals = pts.map(function(p){ return p.val; });
+    var minV = Math.min(0, Math.min.apply(null, vals));
+    var maxV = Math.max(0, Math.max.apply(null, vals));
+    if (minV === maxV) { minV -= 1; maxV += 1; }
+    var padV = (maxV-minV)*0.1;
+    minV -= padV; maxV += padV;
+    function xPos(p){ var ts = new Date(p.date+'T12:00:00').getTime(); return padL + (ts-minTs)/xSpan*(W-padL-padR); }
+    function yPos(v){ return padT + (1-(v-minV)/(maxV-minV))*(H-padT-padB); }
+    var y0 = yPos(0);
+    var linePts = pts.map(function(p){ return xPos(p)+','+yPos(p.val); }).join(' ');
+    var lastVal = pts[pts.length-1].val;
+    var lineColor = lastVal >= 0 ? 'var(--green)' : 'var(--red)';
+    var areaPath = 'M'+xPos(pts[0])+','+y0+' L'+pts.map(function(p){return xPos(p)+','+yPos(p.val);}).join(' L')+' L'+xPos(pts[pts.length-1])+','+y0+' Z';
+    var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="tr-chart-svg">'+
+      '<line x1="'+padL+'" y1="'+y0+'" x2="'+(W-padR)+'" y2="'+y0+'" class="tr-chart-baseline"/>'+
+      '<path d="'+areaPath+'" fill="'+lineColor+'" opacity="0.15" stroke="none"/>'+
+      '<polyline points="'+linePts+'" fill="none" stroke="'+lineColor+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'+
+      '</svg>';
+    wrap.innerHTML = '<div class="tr-chart-labels"><span>'+esc(fmtDay(pts[0].date))+'</span><span class="tr-chart-total">'+fmtUnits(lastVal)+'u</span><span>'+esc(fmtDay(pts[pts.length-1].date))+'</span></div>'+svg;
+  }
+
+  function perfDetailsCompare(a, b){
+    var dir = perfSort.dir === 'asc' ? 1 : -1;
+    var key = perfSort.key;
+    function val(e){
+      if (key === 'match') return (e.matchLabel || e.rec || '');
+      if (key === 'units') return profitFor(e);
+      if (key === 'marketKey') return marketKeyLabel(e.marketKey);
+      return e[key] || '';
+    }
+    var va = val(a), vb = val(b);
+    if (va < vb) return -1*dir;
+    if (va > vb) return 1*dir;
+    return 0;
+  }
+
+  function updatePerfSortHeaders(){
+    document.querySelectorAll('.perf-details-table th.sortable').forEach(function(th){
+      var key = th.getAttribute('data-sort');
+      var active = key === perfSort.key;
+      th.classList.toggle('sort-active', active);
+      th.querySelector('.sort-arrow').textContent = active ? (perfSort.dir === 'asc' ? '▲' : '▼') : '';
+    });
+  }
+
+  var lastPerfArr = [];
+  function renderPerfDetails(arr){
+    lastPerfArr = arr;
+    updatePerfSortHeaders();
+    var body = document.getElementById('perf-details-body');
+    if (!arr.length) { body.innerHTML = '<tr><td colspan="7"><div class="perf-empty">No tracked picks in range.</div></td></tr>'; return; }
+    var sorted = arr.slice().sort(perfDetailsCompare);
+    body.innerHTML = sorted.map(function(e){
+      var units = profitFor(e);
+      // e.date is often a full ISO timestamp rather than a plain date (same note as the
+      // date-range filter above) -- fmtDay() only understands a plain "YYYY-MM-DD", so
+      // slice to that first rather than showing the raw timestamp when it's longer.
+      var eDay = e.date ? String(e.date).slice(0, 10) : '';
+      return '<tr>'+
+        '<td>'+esc(fmtDay(eDay))+'</td>'+
+        '<td>'+esc(e.league||'')+'</td>'+
+        '<td>'+esc(e.rec||'')+'<div class="pk-match">'+esc(e.matchLabel||'')+'</div></td>'+
+        '<td>'+esc(marketKeyLabel(e.marketKey))+'</td>'+
+        '<td>'+esc(e.name||'?')+'</td>'+
+        '<td><span class="status-chip '+esc(e.status)+'">'+esc(STATUS_LABELS[e.status]||e.status)+'</span></td>'+
+        '<td class="num units '+unitsClass(units)+'">'+fmtUnits(units)+'</td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  function renderPerformance(){
+    var arr = perfCurrentFiltered();
+    renderPerfHero(arr);
+    renderPerfBreakdown('perf-league-body', arr, function(e){ return e.league; }, function(k){ return k; });
+    renderPerfBreakdown('perf-market-body', arr, function(e){ return e.marketKey; }, marketKeyLabel);
+    renderPerfChart(arr);
+    renderPerfDetails(arr);
+  }
+
+  document.querySelectorAll('.perf-preset-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ applyPerfPreset(btn.getAttribute('data-perf-preset')); });
+  });
+  document.getElementById('perf-from').addEventListener('change', renderPerformance);
+  document.getElementById('perf-to').addEventListener('change', renderPerformance);
+  document.querySelector('.perf-details-table thead').addEventListener('click', function(e){
+    var th = e.target.closest('th.sortable');
+    if (!th) return;
+    var key = th.getAttribute('data-sort');
+    if (perfSort.key === key) perfSort.dir = perfSort.dir === 'asc' ? 'desc' : 'asc';
+    else { perfSort.key = key; perfSort.dir = key === 'units' ? 'desc' : 'asc'; }
+    renderPerfDetails(lastPerfArr);
+  });
+
   // ---------- init ----------
   var gen = DATA.generatedAt ? new Date(DATA.generatedAt) : null;
   document.getElementById('genMeta').textContent = gen ? ('Updated ' + gen.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})) : '';
@@ -1554,6 +1960,8 @@
   renderTop();
   renderFixtures();
   renderTracker();
+  buildPerfFilters();
+  renderPerformance();
   syncFromServer();
 })();
 </script>
