@@ -16,7 +16,7 @@
   @media (prefers-color-scheme: dark){
     :root{
       --bg:#0f1115; --card:#1a1d24; --text:#e8eaed; --dim:#9aa1ac; --border:#2a2e37;
-      --accent:#5b9bff; --accent-dim:#1c2b47; --green:#4ade80; --green-bg:#0f2d1c;
+      --accent:#4d94ff; --accent-dim:#1c2b47; --green:#4ade80; --green-bg:#0f2d1c;
       --red:#f87171; --red-bg:#3a1414; --amber:#fbbf24; --amber-bg:#3a2c0d;
       --star:#fbbf24; --chip-bg:#232732; --shadow:0 1px 2px rgba(0,0,0,.3),0 1px 8px rgba(0,0,0,.25);
     }
@@ -138,6 +138,14 @@
   .last10-empty{font-size:11px; color:var(--dim);}
   .combo-chip{
     display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase;
+    color:var(--amber); background:var(--amber-bg); border-radius:20px; padding:1px 6px; margin-left:5px; vertical-align:middle;
+  }
+  .parlay-leg-chip{
+    display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-dim); border-radius:20px; padding:1px 6px; margin-left:5px; vertical-align:middle;
+  }
+  .pleg-overlap-chip{
+    display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.2px;
     color:var(--amber); background:var(--amber-bg); border-radius:20px; padding:1px 6px; margin-left:5px; vertical-align:middle;
   }
 
@@ -271,6 +279,7 @@
   .tsum.perf-hero .box{flex:1 1 28%; min-width:84px;}
   .perf-bd-section{margin-bottom:16px;}
   .perf-bd-section h5{font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--dim); margin:0 0 6px 0;}
+  .perf-bd-section .perf-bd-note{font-size:11px; color:var(--dim); margin:-2px 0 6px 0;}
   .perf-table{width:100%; border-collapse:collapse; font-size:12px;}
   .perf-table th, .perf-table td{padding:6px 5px; border-bottom:1px solid var(--border); text-align:left;}
   .perf-table th{color:var(--dim); font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.02em; white-space:nowrap;}
@@ -295,6 +304,49 @@
   .status-chip.lost, .status-chip.half_lost{background:var(--red-bg); color:var(--red);}
   .status-chip.push{background:var(--amber-bg); color:var(--amber);}
 
+  /* ---------- Parlay Builder tab ---------- */
+  .parlay-controls{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px;}
+  .parlay-controls .pl-minlabel{font-size:12px; color:var(--dim); display:flex; align-items:center; gap:6px;}
+  .parlay-controls select{background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:7px 8px; font-size:13px;}
+  .parlay-controls .rebuild-btn{background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:7px 12px; font-size:12.5px; font-weight:600; cursor:pointer;}
+  .parlay-controls .pl-league-note{font-size:11.5px; color:var(--dim); flex-basis:100%;}
+  .parlay-controls .pl-league-note b{color:var(--text); font-weight:600;}
+  .parlay-controls .pl-overlap-note{font-size:11.5px; color:var(--amber); flex-basis:100%;}
+  .pcard{background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:14px; box-shadow:var(--shadow); overflow:hidden;}
+  .pcard .phead{padding:12px 14px 10px 14px; border-bottom:1px solid var(--border);}
+  .pcard .ptitle{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .pcard .ptitle .pname{font-size:14.5px; font-weight:700;}
+  .pcard .ptarget{font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.03em; white-space:nowrap;}
+  .pcard .podds{display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 8px; margin-top:4px;}
+  .pcard .podds .pnum{font-size:22px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .pcard .podds .plabel{font-size:11px; color:var(--dim);}
+  .podds-badge{font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.02em;}
+  .podds-badge.near{background:var(--green-bg); color:var(--green);}
+  .podds-badge.off{background:var(--amber-bg); color:var(--amber);}
+  .pleg{display:flex; align-items:center; gap:8px; padding:9px 14px; border-bottom:1px solid var(--border);}
+  .pleg:last-child{border-bottom:none;}
+  .pleg .pleg-body{flex:1; min-width:0;}
+  .pleg .pleg-match{font-size:10.5px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pleg .pleg-rec{font-size:13px; font-weight:600; margin-top:1px;}
+  .pleg .pleg-meta{display:flex; align-items:center; gap:6px; margin-top:2px; font-size:11px; color:var(--dim);}
+  .pleg .pleg-meta .stars{color:var(--star); font-weight:700;}
+  .pleg .pleg-odds{font-weight:700; color:var(--text); font-variant-numeric:tabular-nums;}
+  .model-price-chip{font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:var(--dim); background:var(--chip-bg); border-radius:20px; padding:1px 6px;}
+  .pleg-actions{display:flex; flex-direction:column; gap:4px; flex:none;}
+  .pleg-actions button{border:1px solid var(--border); background:var(--chip-bg); color:var(--text); border-radius:20px; font-size:10.5px; padding:3px 9px; cursor:pointer; white-space:nowrap;}
+  .pleg-actions .pleg-remove{color:var(--red); border-color:var(--red);}
+  .padd-leg-btn{width:100%; padding:10px; border:1px dashed var(--border); background:none; color:var(--accent); font-size:12.5px; font-weight:600; cursor:pointer;}
+  .pfooter{display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 14px; background:var(--chip-bg);}
+  .pfooter label{font-size:11px; color:var(--dim); display:flex; align-items:center; gap:5px;}
+  .pfooter input[type=number]{width:64px; padding:6px 7px; border-radius:7px; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:12.5px;}
+  .ptrack-btn{flex:1 1 140px; border:1px solid var(--accent); color:#fff; background:var(--accent); border-radius:8px; font-size:12.5px; padding:8px 10px; cursor:pointer; font-weight:700;}
+  .ptrack-btn.tracked{background:var(--green); border-color:var(--green);}
+  .pbelowmin{font-size:10.5px; color:var(--amber); padding:0 14px 8px 14px;}
+  .pempty{font-size:12px; color:var(--dim); text-align:center; padding:16px 10px;}
+  .leg-picker-panel .lp-item{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid var(--border); font-size:12px;}
+  .leg-picker-panel .lp-item:last-child{border-bottom:none;}
+  .leg-picker-panel .lp-add{flex:none; border:1px solid var(--accent); color:var(--accent); background:none; border-radius:20px; font-size:11px; padding:3px 10px; cursor:pointer;}
+
   .footer-note{text-align:center; font-size:10.5px; color:var(--dim); padding:16px 10px 0 10px;}
 
   /* explicit theme choice (toggle) -- overrides both :root and prefers-color-scheme */
@@ -306,7 +358,7 @@
   }
   :root[data-theme="dark"]{
     --bg:#000000; --card:#0d1520; --text:#f2f5f9; --dim:#93a3b8; --border:#22303f;
-    --accent:#6cabdd; --accent-dim:#16324f; --green:#4ade80; --green-bg:#0f2d1c;
+    --accent:#4d94ff; --accent-dim:#16324f; --green:#4ade80; --green-bg:#0f2d1c;
     --red:#f87171; --red-bg:#3a1414; --amber:#fbbf24; --amber-bg:#3a2c0d;
     --star:#fbbf24; --chip-bg:#16202c; --shadow:0 1px 2px rgba(0,0,0,.6),0 1px 12px rgba(0,0,0,.5);
   }
@@ -329,6 +381,7 @@
     <button data-tab="fixtures">Fixtures</button>
     <button data-tab="tracker">Tracker</button>
     <button data-tab="performance">Performance</button>
+    <button data-tab="parlays">Parlays</button>
   </nav>
 </header>
 
@@ -352,7 +405,7 @@
       </select>
       <select id="f-market">
         <option value="">All markets</option>
-        <option value="best_bet">Best Bet</option>
+        <option value="best_bet">Best Bet or Parlay Leg</option>
         <option value="match_total">Match Total</option>
         <option value="btts">BTTS</option>
         <option value="team_total">Team Total</option>
@@ -404,6 +457,11 @@
       <h5>By Bet Type</h5>
       <table class="perf-table"><tbody id="perf-market-body"></tbody></table>
     </div>
+    <div class="perf-bd-section">
+      <h5>By Team</h5>
+      <div class="perf-bd-note">ML/DC/AH/Team Total credit the one team you bet; Match Total and BTTS credit both teams in that game. Custom and Parlay picks aren't tied to a single team or pair of teams.</div>
+      <table class="perf-table"><tbody id="perf-team-body"></tbody></table>
+    </div>
     <div class="perf-bd-section perf-table-wrap">
       <h5>All Tracked Picks</h5>
       <table class="perf-table perf-details-table">
@@ -419,6 +477,23 @@
         <tbody id="perf-details-body"></tbody>
       </table>
     </div>
+  </section>
+
+  <section class="tab" id="tab-parlays">
+    <div class="parlay-controls">
+      <label class="pl-minlabel">Min confidence per leg
+        <select id="pl-minstars">
+          <option value="3">3★+</option>
+          <option value="3.5">3.5★+</option>
+          <option value="4" selected>4★+</option>
+          <option value="4.5">4.5★+</option>
+        </select>
+      </label>
+      <button class="rebuild-btn" id="pl-rebuild-all">Rebuild all 3</button>
+      <span class="pl-league-note" id="pl-league-note"></span>
+      <span class="pl-overlap-note" id="pl-overlap-note"></span>
+    </div>
+    <div id="parlayList"></div>
   </section>
 </main>
 
@@ -439,6 +514,11 @@
   </div>
   <div id="time-options"></div>
   <button class="backdrop-close" data-close>Done</button>
+</div>
+<div class="dropdown-panel leg-picker-panel" id="leg-picker-panel">
+  <input type="search" class="search" id="lp-search" placeholder="Search picks…">
+  <div id="lp-options"></div>
+  <button class="backdrop-close" data-close>Close</button>
 </div>
 
 <script id="fixtures-data" type="application/json">__FIXTURES_JSON__</script>
@@ -732,6 +812,25 @@
     return null;
   }
 
+  // "Parlay Leg" eligibility -- mirrors buildParlayPool()'s own consider() gate exactly
+  // (same min-confidence floor as the Parlay tab's own selector, same price precedence
+  // via legOddsFor()) so the badge is always literally true: "this would be pulled into
+  // today's Parlay pool right now." Carlos, 2026-09-16, after finding a 5-star BTTS pick
+  // this way that his Best Bet + star filter was hiding: "suggestions on how to display
+  // these? Maybe Display a Parlay Leg indicator." Reads #pl-minstars fresh each call
+  // (not parlayPool, which may not be built yet the first time Top Picks/Fixtures render)
+  // so this never depends on the Parlays tab having initialized first.
+  function parlayLegMinStars(){
+    var el = document.getElementById('pl-minstars');
+    var v = el ? parseFloat(el.value) : NaN;
+    return isNaN(v) ? 4 : v; // 4 matches the Parlay tab's own default selection
+  }
+  function isParlayLegEligible(fx, marketKey, side, pick){
+    if (!pick || pick.stars == null || pick.stars < parlayLegMinStars()) return false;
+    var o = legOddsFor(fx, marketKey, side, pick);
+    return o.odds != null && !isNaN(o.odds);
+  }
+
   function marketRowHtml(fx, marketKey, side, pick, label){
     var trackId = fx.id + '::' + marketKey + (side?('::'+side):'');
     var tracked = isTracked(trackId);
@@ -760,9 +859,11 @@
     var oddsTitle = trackedEntry ? 'Tracked odds -- edit to update' : (liveOdds != null ? 'Current API odds -- edit before tracking if you got a different price' : 'Odds to track');
     var oddsInputHtml = '<input type="number" step="1" inputmode="numeric" class="market-odds-input" placeholder="Odds" '+
       'title="'+esc(oddsTitle)+'" data-oddsinput="'+esc(trackId)+'" value="'+(oddsVal!=null?esc(String(oddsVal)):'')+'">';
+    var parlayLegChip = isParlayLegEligible(fx, marketKey, side, pick)
+      ? ' <span class="parlay-leg-chip" title="Would clear the Parlay tab\'s current min-confidence floor -- good parlay-leg material even when this is not the fixture\'s Best Bet">Parlay Leg</span>' : '';
     return '<div class="market-row">'+labelHtml+
       '<div class="body">'+
-        '<span class="rec">'+esc(pick.rec)+'</span> <span class="stars">'+esc(stars(pick.stars))+'</span>'+
+        '<span class="rec">'+esc(pick.rec)+'</span> <span class="stars">'+esc(stars(pick.stars))+'</span>'+parlayLegChip+
         (pick.reason ? '<div class="reason">'+esc(pick.reason)+'</div>' : '')+
         moveLineHtml(fx, marketKey, side, pick)+
       '</div>'+
@@ -973,10 +1074,15 @@
   }
 
   function bestBetSummaryLine(fx){
-    if (fx.best_bet) {
+    if (fx.best_bet && fx.best_bet.stars != null) {
       return '<div class="bb-line"><span class="stars">'+esc(stars(fx.best_bet.stars))+'</span><span>'+esc(fx.best_bet.rec)+'</span></div>';
     }
-    return '<div class="bb-line pass">No straight-bettable pick</div>';
+    // PASS -- now that the backend keeps best_bet's reason instead of dropping the whole
+    // object (Carlos, 2026-09-16: "why if there is a BTTS Bet Yes of 5 stars, the best
+    // bet is PASS?"), show the real reason (e.g. "priced shorter than -200 to bet
+    // straight") instead of this generic line whenever one's available.
+    var reason = fx.best_bet && fx.best_bet.reason;
+    return '<div class="bb-line pass">'+(reason ? esc(reason) : 'No straight-bettable pick')+'</div>';
   }
 
   function cardHtml(fx, opts){
@@ -1167,17 +1273,28 @@
     if (minStars > 0 || marketFilter) {
       var picks = [];
       if (!marketFilter || marketFilter==='best_bet') picks.push(fx.best_bet);
-      if (!marketFilter || marketFilter==='match_total') picks.push(fx.match_total);
-      if (!marketFilter || marketFilter==='btts') picks.push(fx.btts);
+      // "Best Bet or Parlay Leg" -- Carlos, 2026-09-16, after finding a 5-star BTTS pick
+      // via the Parlay Builder that his Best Bet + 4.5star filter here was hiding: the
+      // BTTS market itself was 5 stars, but its price (-217) was too short for the -200
+      // straight-bet floor, so the fixture's single best_bet slot PASS'd on it -- and
+      // that PASS was quietly excluding the whole fixture from this filter, even though
+      // it's exactly the kind of pick that's great as a parlay leg. Selecting "Best Bet"
+      // now also matches every other market, not just the one literal best_bet pick.
+      if (!marketFilter || marketFilter==='best_bet' || marketFilter==='match_total') picks.push(fx.match_total);
+      if (!marketFilter || marketFilter==='best_bet' || marketFilter==='btts') picks.push(fx.btts);
       ['team_total','ml','dc','ah'].forEach(function(mk){
-        if (!marketFilter || marketFilter===mk) {
+        if (!marketFilter || marketFilter==='best_bet' || marketFilter===mk) {
           picks.push((fx[mk]||{}).home);
           picks.push((fx[mk]||{}).away);
         }
       });
       picks = picks.filter(function(p){ return p && p.stars != null; });
       if (!picks.length) return false;
-      if (minStars > 0 && (!fx.best_bet || fx.best_bet.stars < minStars)) return false;
+      // Bug fix, same date: this used to hardcode fx.best_bet.stars here regardless of
+      // which markets `picks` above actually assembled for the current Bet Type filter --
+      // so the star floor was silently "best_bet only" even when Bet Type was BTTS, ML,
+      // or no filter at all. Now it checks whichever picks are actually in scope.
+      if (minStars > 0 && !picks.some(function(p){ return p.stars >= minStars; })) return false;
     }
     return true;
   }
@@ -1425,6 +1542,7 @@
       resyncAllTrackButtons();
       buildPerfFilters(); // fresh sync can introduce a league/type/name the Performance filters haven't seen yet
       renderPerformance();
+      if (typeof renderParlays === 'function') renderParlays(); // reflect Tracked state if a parlay was tracked elsewhere
     }).catch(function(){ /* offline or unreachable -- keep showing the last-synced cache */ });
   }
 
@@ -1827,7 +1945,7 @@
   // state. profitFor()/stakeForWin1() above are reused as-is for the units math rather
   // than recomputed here, so Tracker and Performance can never silently disagree on a
   // pick's profit.
-  var MARKET_KEY_LABELS = {best_bet:'Best Bet', match_total:'Match Total', btts:'BTTS', team_total:'Team Total', ml:'ML', dc:'DC', ah:'AH', custom:'Custom'};
+  var MARKET_KEY_LABELS = {best_bet:'Best Bet', match_total:'Match Total', btts:'BTTS', team_total:'Team Total', ml:'ML', dc:'DC', ah:'AH', custom:'Custom', parlay:'Parlay'};
   function marketKeyLabel(mk){ return MARKET_KEY_LABELS[mk] || (mk || 'Unknown'); }
 
   // Flags a custom pick as a stacked combo (e.g. "BTTS Yes and Over 2.5", "X ML and Y TT")
@@ -1847,6 +1965,40 @@
     return isComboPick(e) ? 'custom_combo' : 'custom_single';
   }
   function comboBreakdownLabel(k){ return COMBO_BREAKDOWN_LABELS[k] || marketKeyLabel(k); }
+
+  // "By Team" breakdown. Carlos, 2026-09-16: "If I bet the ML, TT, DC or AH on a team
+  // and cashed that should be shown, if BTTS, Over Match Total cashed on the game and
+  // the team took part that should show too." Two different attribution rules, by
+  // market:
+  //   - ml/dc/ah/team_total picks are already about ONE specific team (matchLabel is
+  //     "Home vs Away" and side says which) -- credit that team only.
+  //   - match_total/btts picks are about the GAME, not one side, but both teams were
+  //     "in" that game -- Carlos wants both credited (or debited) the same result.
+  // Each entry therefore expands into one or two {..entry, __team} attributions before
+  // going through the normal renderPerfBreakdown() aggregation (which only ever reads
+  // one key per array item) -- see teamBreakdownEntries() below. Custom and Parlay stay
+  // excluded: multi-leg/freeform picks with no single well-defined team or pair of
+  // teams, same reasoning as comboBreakdownKey() carving Custom into combo/single
+  // instead of guessing. Best Bet also stays excluded -- it never carries a `side` in
+  // this app even when the winning market underneath it was team-specific (e.g.
+  // "Moneyline Value"), so there's no reliable way to tell a team-specific Best Bet
+  // pick apart from a match-level one here without risking a wrong attribution.
+  function teamBreakdownEntries(arr){
+    var out = [];
+    arr.forEach(function(e){
+      if (!e.matchLabel || e.matchLabel.indexOf(' vs ') === -1) return;
+      var parts = e.matchLabel.split(' vs ');
+      if (e.side === 'home' || e.side === 'away') {
+        out.push(Object.assign({}, e, {__team: e.side === 'home' ? parts[0] : parts[1]}));
+      } else if (e.marketKey === 'match_total' || e.marketKey === 'btts') {
+        out.push(Object.assign({}, e, {__team: parts[0]}));
+        out.push(Object.assign({}, e, {__team: parts[1]}));
+      }
+    });
+    return out;
+  }
+  function teamBreakdownKey(e){ return e.__team; }
+  function teamBreakdownLabel(k){ return k; }
   function comboChipHtml(e){
     return isComboPick(e) ? ' <span class="combo-chip" title="Stacked combo pick (e.g. BTTS + Over) -- historically your weakest custom-pick pattern">combo</span>' : '';
   }
@@ -2101,6 +2253,7 @@
     renderPerfHero(arr);
     renderPerfBreakdown('perf-league-body', arr, function(e){ return e.league; }, function(k){ return k; });
     renderPerfBreakdown('perf-market-body', arr, comboBreakdownKey, comboBreakdownLabel);
+    renderPerfBreakdown('perf-team-body', teamBreakdownEntries(arr), teamBreakdownKey, teamBreakdownLabel);
     renderPerfChart(arr);
     renderPerfDetails(arr);
   }
@@ -2119,6 +2272,475 @@
     renderPerfDetails(lastPerfArr);
   });
 
+  // ---------- Parlay Builder ----------
+  // Three same-day parlays targeting three payout tiers, built from the model's own
+  // high-confidence picks across all six markets (real sportsbook price where the pipeline
+  // pulls one -- ML/Match Total/Team Total/BTTS -- else the model's own zero-vig breakeven
+  // price for Best Bet/DC/AH, flagged "model price" wherever that's the case, since those
+  // three markets have no real market-odds coverage at all -- see Finding #46). Carlos,
+  // 2026-09-15: any market is fair game as a leg as long as it clears a high confidence bar
+  // (the pl-minstars floor below), and the three parlays should use different legs from each
+  // other -- built here by constructing Long Shot first, then Realistic and Bankroll Builder
+  // each excluding every leg already claimed by an earlier slot, so the three lists never
+  // overlap by construction, not just by convention. Swap/Add on any card only offers legs
+  // not already sitting in one of the other two, so manual edits can't reintroduce an overlap.
+  // No backend/pipeline change needed for this -- every leg's rec/stars/reason/price already
+  // ships in the existing fixtures JSON (see marketRowHtml()/currentOddsFor() above, reused
+  // as-is here), and a confirmed parlay becomes one ordinary Tracker entry (market_key:
+  // 'parlay') graded by hand with the same Won/½Won/Push/½Lost/Lost buttons as every other
+  // pick -- TrackerSync.gs has no market_key whitelist, so this needed zero Apps Script or
+  // Postgres changes either.
+  var PARLAY_SLOTS = [
+    {key:'longshot', name:'Long Shot', targetOdds:1000, minLegs:3},
+    {key:'realistic', name:'Realistic', targetOdds:500, minLegs:3},
+    {key:'bankroll', name:'Bankroll Builder', targetOdds:200, minLegs:3}
+  ];
+  // Display order (above) stays Long Shot / Realistic / Bankroll Builder, matching how
+  // Carlos described the three tiers -- but build PRIORITY is different: Carlos,
+  // 2026-09-16: Bankroll Builder should get first pick of the most probable legs (it's
+  // the steady/safe one), Realistic next, and Long Shot -- which needs the most legs and
+  // the most compounding to reach +1000 anyway -- builds last from whatever's left. Kept
+  // as a separate order rather than reordering PARLAY_SLOTS itself so the on-page card
+  // order doesn't jump around.
+  var PARLAY_BUILD_ORDER = ['bankroll', 'realistic', 'longshot'];
+  var PARLAY_STATE_KEY = 'matchDayParlayState_v1';
+  var PARLAY_CANDIDATE_CAP = 14;
+  var MK_SHORT = {best_bet:'Best Bet', match_total:'Total', btts:'BTTS', team_total:'Team Total', ml:'ML', dc:'DC', ah:'AH'};
+
+  var parlayPool = [];
+  var parlayLegs = {longshot: [], realistic: [], bankroll: []};
+  var legPickerTarget = null; // {slotKey, replaceLegId}
+
+  function americanToDecimal(o){
+    if (o == null || isNaN(o)) return null;
+    return o > 0 ? 1 + o/100 : 1 + 100/Math.abs(o);
+  }
+  function decimalToAmerican(d){
+    if (d == null || isNaN(d) || d <= 1) return null;
+    return d >= 2 ? Math.round((d-1)*100) : Math.round(-100/(d-1));
+  }
+  function legOddsFor(fx, marketKey, side, pick){
+    var live = currentOddsFor(fx, marketKey, side, pick);
+    var odds = live != null ? live : parseAmericanOdds(pick.rec);
+    return {odds: odds, source: live != null ? 'real' : 'model'};
+  }
+
+  // Every KEEP pick across all six markets that clears minStars, priced the exact same
+  // way its own market row already prices it (live API odds first, else the model's
+  // embedded threshold price) -- see marketRowHtml() above for the identical precedence.
+  function buildParlayPool(minStars){
+    var pool = [];
+    function consider(fx, marketKey, side, pick){
+      if (!pick || pick.stars == null || pick.stars < minStars) return;
+      var o = legOddsFor(fx, marketKey, side, pick);
+      if (o.odds == null || isNaN(o.odds)) return; // can't price it -- skip rather than guess
+      var team = side === 'home' ? fx.home : (side === 'away' ? fx.away : '');
+      pool.push({
+        legId: fx.id + '::' + marketKey + (side ? '::' + side : ''),
+        fxId: fx.id, marketKey: marketKey, side: side || '',
+        label: MK_SHORT[marketKey] + (team ? ' · ' + team : ''),
+        matchLabel: fx.home + ' vs ' + fx.away, league: fx.league, date: fx.date, ts: fx.ts,
+        rec: pick.rec, stars: pick.stars, odds: o.odds, oddsSource: o.source
+      });
+    }
+    // Carlos, 2026-09-16: "we need to do this per day... the parlays are including
+    // games from different days, but I would prefer to keep it to a single day" --
+    // reuses the Fixtures tab's own single-day dropdown (#f-day, value '' = All days)
+    // the exact same way the league filter above already reuses leagueSelected: read
+    // it fresh here rather than adding a second day picker Carlos would have to set
+    // twice. Read once per build rather than per-fixture (it's one DOM read, not a Set).
+    var dayFilter = document.getElementById('f-day').value;
+    FIXTURES.forEach(function(fx){
+      // Carlos, 2026-09-15: "Each day I review which leagues are available on my
+      // books and filter out the ones that are not available and only work with
+      // recommendations on the available leagues" -- reuses the exact same
+      // leagueSelected state the Fixtures tab's League dropdown already maintains
+      // (built/restored before initParlays() runs, see the init call order below),
+      // rather than a second, separately-configured filter Carlos would have to
+      // keep in sync by hand. Same "empty selection = no restriction" convention
+      // passesFilters() uses on the Fixtures tab.
+      if (leagueSelected.size && !leagueSelected.has(fx.league)) return;
+      if (dayFilter && fx.date !== dayFilter) return;
+      consider(fx, 'best_bet', null, fx.best_bet);
+      consider(fx, 'match_total', null, fx.match_total);
+      consider(fx, 'btts', null, fx.btts);
+      ['team_total','ml','dc','ah'].forEach(function(mk){
+        var obj = fx[mk] || {};
+        consider(fx, mk, 'home', obj.home);
+        consider(fx, mk, 'away', obj.away);
+      });
+    });
+    pool.sort(function(a,b){ return b.stars - a.stars || (b.odds - a.odds); });
+    updateParlayLeagueNote();
+    return pool;
+  }
+
+  // Small transparency line under the Parlays controls so a narrowed Fixtures-tab
+  // Day/League selection is never silently affecting which legs get proposed -- same
+  // spirit as the PASS-reason-string additions elsewhere in this file (Carlos likes
+  // to see WHY, not just accept a result).
+  function updateParlayLeagueNote(){
+    var el = document.getElementById('pl-league-note');
+    if (!el) return;
+    var parts = [];
+    var dayFilter = document.getElementById('f-day').value;
+    if (dayFilter) parts.push('<b>' + esc(fmtDay(dayFilter)) + '</b> only');
+    if (leagueSelected.size && leagueSelected.size < leagueSet.length) {
+      parts.push('<b>' + leagueSelected.size + ' of ' + leagueSet.length + '</b> leagues');
+    }
+    el.innerHTML = parts.length ? ('Using ' + parts.join(', ') + ' (matches your Fixtures tab filters).') : '';
+  }
+
+  function resolveLegById(legId){
+    var i;
+    for (i=0;i<parlayPool.length;i++){ if (parlayPool[i].legId === legId) return parlayPool[i]; }
+    return null;
+  }
+  function parlayCombinedDecimal(legs){
+    return legs.reduce(function(acc,l){ return acc * americanToDecimal(l.odds); }, 1);
+  }
+
+  // Carlos, 2026-09-15: "could you please add a warning if the same game leg is used in
+  // multiple parlays? Do not block it, but just warn me" -- a leg is never duplicated
+  // across the three parlays (legId is kept globally distinct on purpose, see the notes
+  // above buildParlayFromPool/renderLegPickerOptions), but two DIFFERENT legs from the
+  // SAME fixture -- e.g. Team A ML in Bankroll Builder and Team A BTTS in Realistic --
+  // are still correlated risk and aren't caught by that legId check, since it's the same
+  // game outcome-adjacent, not the same bet. This only flags it; nothing here removes or
+  // blocks a leg. fxId -> [{slotKey, slotName}], one entry per slot that fixture appears in
+  // (a fixture can't repeat WITHIN one slot -- see usesSameFixture/usedFxIdsInSlot).
+  function crossParlayFxMap(){
+    var map = {};
+    PARLAY_SLOTS.forEach(function(s){
+      var seenInSlot = {};
+      (parlayLegs[s.key]||[]).forEach(function(l){
+        if (seenInSlot[l.fxId]) return;
+        seenInSlot[l.fxId] = true;
+        (map[l.fxId] = map[l.fxId] || []).push({slotKey: s.key, slotName: s.name});
+      });
+    });
+    return map;
+  }
+  function updateParlayOverlapNote(){
+    var el = document.getElementById('pl-overlap-note');
+    if (!el) return;
+    var fxMap = crossParlayFxMap();
+    var overlapCount = Object.keys(fxMap).filter(function(fx){ return fxMap[fx].length > 1; }).length;
+    el.innerHTML = overlapCount
+      ? ('⚠ ' + overlapCount + ' game' + (overlapCount > 1 ? 's' : '') + ' used across more than one parlay -- see the ⚠ flag on each leg below (not blocked, just flagging the correlated risk).')
+      : '';
+  }
+
+  // Best-fitting 3-6 leg combo (no two legs sharing a fixture -- the model treats markets
+  // independently, which stops holding once two legs share a fixture) from the top of the
+  // pool, brute-forced over PARLAY_CANDIDATE_CAP candidates (cheap: a few thousand combos).
+  // Scored by distance to the target payout in log-odds space (odds compound
+  // multiplicatively); within a close band, prefers fewer legs, then higher average stars.
+  // excludeLegIds keeps this slot's legs distinct from any slot already built.
+  function buildParlayFromPool(pool, targetOdds, minLegs, excludeLegIds){
+    var candidates = pool.filter(function(l){ return (excludeLegIds||[]).indexOf(l.legId) === -1; }).slice(0, PARLAY_CANDIDATE_CAP);
+    var targetLog = Math.log(americanToDecimal(targetOdds));
+    var best = null;
+    function scoreCombo(combo){
+      var dec = parlayCombinedDecimal(combo);
+      var diff = Math.abs(Math.log(dec) - targetLog);
+      var avgStars = combo.reduce(function(s,l){return s+l.stars;},0) / combo.length;
+      return {dec: dec, diff: diff, avgStars: avgStars, legCount: combo.length};
+    }
+    function isBetter(a, b){
+      if (!b) return true;
+      var closeBand = 0.12;
+      if (Math.abs(a.diff - b.diff) > closeBand) return a.diff < b.diff;
+      if (a.legCount !== b.legCount) return a.legCount < b.legCount;
+      return a.avgStars > b.avgStars;
+    }
+    function usesSameFixture(combo, leg){
+      return combo.some(function(l){ return l.fxId === leg.fxId; });
+    }
+    function search(startIdx, combo){
+      if (combo.length >= minLegs) {
+        var s = scoreCombo(combo);
+        if (isBetter(s, best ? best.score : null)) best = {legs: combo.slice(), score: s};
+      }
+      if (combo.length >= 6) return;
+      for (var i = startIdx; i < candidates.length; i++){
+        var leg = candidates[i];
+        if (usesSameFixture(combo, leg)) continue;
+        combo.push(leg);
+        search(i+1, combo);
+        combo.pop();
+      }
+    }
+    search(0, []);
+    return best ? best.legs : [];
+  }
+
+  // Bankroll Builder gets its own construction: Carlos, 2026-09-16 -- it should use the
+  // most probable legs available, even if that lands the combined payout further from
+  // +200 than a "closest fit" search would. A greedy pick straight down the pool (already
+  // sorted highest-star first) does that directly: take the safest legs one at a time,
+  // skipping same-fixture conflicts, stopping as soon as the target is cleared with at
+  // least minLegs -- so it never reaches for a riskier leg just to land closer to +200.
+  function buildParlayGreedySafest(pool, targetOdds, minLegs, excludeLegIds){
+    var candidates = pool.filter(function(l){ return (excludeLegIds||[]).indexOf(l.legId) === -1; });
+    var targetDec = americanToDecimal(targetOdds);
+    var combo = [];
+    for (var i = 0; i < candidates.length && combo.length < 6; i++){
+      var leg = candidates[i];
+      if (combo.some(function(l){ return l.fxId === leg.fxId; })) continue;
+      combo.push(leg);
+      if (combo.length >= minLegs && parlayCombinedDecimal(combo) >= targetDec) break;
+    }
+    return combo;
+  }
+
+  function rebuildAllParlays(){
+    var usedIds = [];
+    PARLAY_BUILD_ORDER.forEach(function(slotKey){
+      var s = PARLAY_SLOTS.filter(function(x){ return x.key===slotKey; })[0];
+      var legs = slotKey === 'bankroll'
+        ? buildParlayGreedySafest(parlayPool, s.targetOdds, s.minLegs, usedIds)
+        : buildParlayFromPool(parlayPool, s.targetOdds, s.minLegs, usedIds);
+      parlayLegs[s.key] = legs;
+      usedIds = usedIds.concat(legs.map(function(l){ return l.legId; }));
+    });
+    saveParlayState();
+    renderParlays();
+  }
+
+  function saveParlayState(){
+    try {
+      var out = {minStars: document.getElementById('pl-minstars').value, slots:{}};
+      PARLAY_SLOTS.forEach(function(s){ out.slots[s.key] = (parlayLegs[s.key]||[]).map(function(l){ return l.legId; }); });
+      localStorage.setItem(PARLAY_STATE_KEY, JSON.stringify(out));
+    } catch(e){}
+  }
+  function loadParlayState(){
+    try { return JSON.parse(localStorage.getItem(PARLAY_STATE_KEY) || 'null'); } catch(e){ return null; }
+  }
+
+  function parlayTrackId(slotKey){
+    // One trackable entity per slot per day -- editing legs and re-tracking updates the
+    // same Tracker entry (via the same upsert-by-trackId path already used to edit an
+    // already-tracked market pick's odds/stake) instead of creating duplicates.
+    var today = FIXTURES.length ? String(FIXTURES[0].date).slice(0,10) : '';
+    return 'parlay::' + slotKey + '::' + today;
+  }
+  function parlayRecString(slotName, legs){
+    return slotName + ' — ' + legs.map(function(l){ return l.label + ': ' + l.rec + ' (' + fmtAmerican(l.odds) + ')'; }).join('  +  ');
+  }
+
+  function parlayCardHtml(slot){
+    var legs = parlayLegs[slot.key] || [];
+    var baseTrackId = parlayTrackId(slot.key);
+    var tracked = isTracked(baseTrackId);
+    var trackedEntry = tracked ? findTrackedEntry(baseTrackId) : null;
+    var minStarsLabel = document.getElementById('pl-minstars').value;
+    if (!legs.length) {
+      return '<div class="pcard" data-slot="'+esc(slot.key)+'"><div class="phead"><div class="ptitle"><span class="pname">'+esc(slot.name)+'</span><span class="ptarget">Target '+fmtAmerican(slot.targetOdds)+'</span></div></div>'+
+        '<div class="pempty">Not enough distinct '+esc(minStarsLabel)+'★+ picks left today to build a '+slot.minLegs+'-leg parlay here (the other two parlays may already be using the best ones). Try lowering the confidence floor above, or free up legs by editing the other parlays.</div>'+
+        '<button class="padd-leg-btn" data-addleg="'+esc(slot.key)+'">+ Add a leg</button></div>';
+    }
+    var belowMin = legs.length < slot.minLegs;
+    var dec = parlayCombinedDecimal(legs);
+    var american = decimalToAmerican(dec);
+    var nearTarget = Math.abs(Math.log(dec) - Math.log(americanToDecimal(slot.targetOdds))) < 0.25;
+    var usesModelPrice = legs.some(function(l){ return l.oddsSource === 'model'; });
+    var fxOverlapMap = crossParlayFxMap();
+    var legsHtml = legs.map(function(l){
+      var overlapElsewhere = (fxOverlapMap[l.fxId]||[]).filter(function(o){ return o.slotKey !== slot.key; });
+      var overlapChip = overlapElsewhere.length
+        ? ' <span class="pleg-overlap-chip" title="Not blocked -- just flagging the correlated risk: this game is also a leg in '+esc(overlapElsewhere.map(function(o){return o.slotName;}).join(' and '))+'.">⚠ also in '+esc(overlapElsewhere.map(function(o){return o.slotName;}).join(', '))+'</span>'
+        : '';
+      return '<div class="pleg" data-legid="'+esc(l.legId)+'">'+
+        '<div class="pleg-body">'+
+          '<div class="pleg-match">'+esc(l.matchLabel)+' · '+esc(l.league)+'</div>'+
+          '<div class="pleg-rec">'+esc(l.label)+': '+esc(l.rec)+'</div>'+
+          '<div class="pleg-meta"><span class="stars">'+esc(stars(l.stars))+'</span><span class="pleg-odds">'+fmtAmerican(l.odds)+'</span>'+(l.oddsSource==='model'?'<span class="model-price-chip" title="No live sportsbook market for this bet -- this is the model\'s own breakeven price, not a real quote">model price</span>':'')+overlapChip+'</div>'+
+        '</div>'+
+        '<div class="pleg-actions">'+
+          '<button class="pleg-swap" data-swap="'+esc(slot.key)+'" data-legid="'+esc(l.legId)+'">Swap</button>'+
+          '<button class="pleg-remove" data-remove-leg="'+esc(slot.key)+'" data-legid="'+esc(l.legId)+'">✕</button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    var defaultOdds = trackedEntry && trackedEntry.odds != null ? trackedEntry.odds : american;
+    var defaultStake = trackedEntry && trackedEntry.stake != null ? trackedEntry.stake : stakeForWin1(american);
+    return '<div class="pcard" data-slot="'+esc(slot.key)+'">'+
+      '<div class="phead">'+
+        '<div class="ptitle"><span class="pname">'+esc(slot.name)+'</span><span class="ptarget">Target '+fmtAmerican(slot.targetOdds)+'</span></div>'+
+        '<div class="podds"><span class="pnum">'+fmtAmerican(american)+'</span><span class="plabel">'+legs.length+'-leg combined'+(usesModelPrice?' · incl. model price':'')+'</span>'+
+          '<span class="podds-badge '+(nearTarget?'near':'off')+'">'+(nearTarget?'near target':'off target')+'</span></div>'+
+      '</div>'+
+      legsHtml+
+      (belowMin ? '<div class="pbelowmin">Only '+legs.length+' leg(s) -- add at least '+slot.minLegs+' for a genuine parlay.</div>' : '')+
+      '<button class="padd-leg-btn" data-addleg="'+esc(slot.key)+'">+ Add a leg</button>'+
+      '<div class="pfooter">'+
+        '<label>Odds<input type="number" step="1" data-podds="'+esc(slot.key)+'" value="'+(defaultOdds!=null?esc(String(defaultOdds)):'')+'"></label>'+
+        '<label>Stake<input type="number" min="0" step="0.25" data-pstake="'+esc(slot.key)+'" value="'+esc(defaultStake)+'"></label>'+
+        '<button class="ptrack-btn'+(tracked?' tracked':'')+'" data-track-parlay="'+esc(slot.key)+'">'+(tracked?'Tracked ✓ — tap to update':'Track this Parlay')+'</button>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function renderParlaySlotDom(slotKey){
+    var slot = PARLAY_SLOTS.filter(function(s){ return s.key===slotKey; })[0];
+    if (!slot) return;
+    var el = document.querySelector('.pcard[data-slot="'+slotKey+'"]');
+    var html = parlayCardHtml(slot);
+    if (el) el.outerHTML = html; else document.getElementById('parlayList').insertAdjacentHTML('beforeend', html);
+    updateParlayOverlapNote();
+  }
+  function renderParlays(){
+    document.getElementById('parlayList').innerHTML = PARLAY_SLOTS.map(parlayCardHtml).join('');
+    updateParlayOverlapNote();
+  }
+
+  function openLegPicker(slotKey, replaceLegId){
+    legPickerTarget = {slotKey: slotKey, replaceLegId: replaceLegId || null};
+    document.getElementById('lp-search').value = '';
+    renderLegPickerOptions('');
+    openPanel(document.getElementById('leg-picker-panel'));
+  }
+  function renderLegPickerOptions(filterText){
+    var box = document.getElementById('lp-options');
+    var ft = (filterText||'').toLowerCase();
+    var usedElsewhere = [];
+    PARLAY_SLOTS.forEach(function(s){
+      (parlayLegs[s.key]||[]).forEach(function(l){
+        if (l.legId !== legPickerTarget.replaceLegId) usedElsewhere.push(l.legId);
+      });
+    });
+    var usedFxIdsInSlot = (parlayLegs[legPickerTarget.slotKey]||[])
+      .filter(function(l){ return l.legId !== legPickerTarget.replaceLegId; })
+      .map(function(l){ return l.fxId; });
+    var opts = parlayPool.filter(function(l){
+      if (usedElsewhere.indexOf(l.legId) !== -1) return false; // keep the three parlays' legs distinct
+      if (usedFxIdsInSlot.indexOf(l.fxId) !== -1) return false; // no two legs from the same fixture in one parlay
+      if (ft && (l.matchLabel+' '+l.label+' '+l.rec).toLowerCase().indexOf(ft) === -1) return false;
+      return true;
+    });
+    box.innerHTML = opts.length ? opts.map(function(l){
+      return '<div class="lp-item"><span>'+esc(l.matchLabel)+' — '+esc(l.label)+': '+esc(l.rec)+' <span class="stars">'+esc(stars(l.stars))+'</span> <b>'+fmtAmerican(l.odds)+'</b>'+(l.oddsSource==='model'?' <span class="model-price-chip">model</span>':'')+'</span>'+
+        '<button class="lp-add" data-lp-pick="'+esc(l.legId)+'">Add</button></div>';
+    }).join('') : '<div class="pempty">No other eligible picks match (they may already be used in one of the three parlays).</div>';
+    box.querySelectorAll('[data-lp-pick]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var leg = resolveLegById(btn.getAttribute('data-lp-pick'));
+        if (!leg || !legPickerTarget) return;
+        var slotKey = legPickerTarget.slotKey, replaceLegId = legPickerTarget.replaceLegId;
+        var arr = parlayLegs[slotKey] || (parlayLegs[slotKey] = []);
+        if (replaceLegId) {
+          var idx = arr.findIndex(function(l){ return l.legId===replaceLegId; });
+          if (idx !== -1) arr[idx] = leg; else arr.push(leg);
+        } else {
+          arr.push(leg);
+        }
+        saveParlayState();
+        // Full re-render, not just this slot: adding/swapping a leg here can newly overlap
+        // (or resolve an overlap with) a fixture already used in one of the OTHER two
+        // parlays, and their ⚠ chips need to reflect that too.
+        renderParlays();
+        closeAllPanels();
+      });
+    });
+  }
+
+  function trackParlay(slotKey){
+    var slot = PARLAY_SLOTS.filter(function(s){ return s.key===slotKey; })[0];
+    var legs = parlayLegs[slotKey] || [];
+    if (legs.length < 2) { alert('Add at least two legs before tracking this parlay.'); return; }
+    var identity = ensureIdentity();
+    if (!identity) return;
+    var baseTrackId = parlayTrackId(slotKey);
+    var scopedId = identity.name + '::' + baseTrackId;
+    var card = document.querySelector('.pcard[data-slot="'+slotKey+'"]');
+    var oddsInput = card ? card.querySelector('[data-podds]') : null;
+    var stakeInput = card ? card.querySelector('[data-pstake]') : null;
+    var typedOdds = oddsInput && oddsInput.value !== '' ? parseFloat(oddsInput.value) : NaN;
+    var combinedAmerican = decimalToAmerican(parlayCombinedDecimal(legs));
+    var odds = !isNaN(typedOdds) ? typedOdds : combinedAmerican;
+    var stake = stakeInput && stakeInput.value !== '' ? parseFloat(stakeInput.value) : stakeForWin1(odds);
+    var minDate = null;
+    legs.forEach(function(l){ if (l.date && (!minDate || l.date < minDate)) minDate = l.date; });
+    var arr = loadTracked();
+    var idx = arr.findIndex(function(t){ return t.trackId===scopedId; });
+    var prevEntry = idx !== -1 ? arr[idx] : null;
+    var entry = {
+      trackId: scopedId, name: identity.name, fxId: legs.map(function(l){return l.fxId;}).join('+'),
+      marketKey: 'parlay', side: '',
+      matchLabel: legs.length + '-leg parlay: ' + legs.map(function(l){ return l.matchLabel; }).join(', '),
+      league: 'Parlay', date: minDate || '',
+      rec: parlayRecString(slot.name, legs),
+      stars: null, odds: odds, stake: stake, status: prevEntry ? prevEntry.status : 'pending', addedAt: prevEntry ? prevEntry.addedAt : Date.now()
+    };
+    if (idx !== -1) arr[idx] = entry; else arr.push(entry);
+    saveTracked(arr);
+    renderTracker();
+    renderParlaySlotDom(slotKey);
+    var revert = function(){
+      var arr2 = loadTracked();
+      if (prevEntry) { var i2 = arr2.findIndex(function(t){return t.trackId===scopedId;}); if (i2!==-1) arr2[i2]=prevEntry; }
+      else { arr2 = arr2.filter(function(t){ return t.trackId !== scopedId; }); }
+      saveTracked(arr2); renderTracker(); renderParlaySlotDom(slotKey);
+    };
+    postToServer({action:'upsert', name:identity.name, pin:identity.pin, pick: entryToServerPick(entry)}).then(function(res){
+      if (!res || !res.ok) { revert(); alert('Could not save: ' + ((res&&res.error)||'server error')); }
+    }).catch(function(){ revert(); alert('Could not reach the tracker sheet -- check your connection and try again.'); });
+  }
+
+  function initParlays(){
+    var minStars = parseFloat(document.getElementById('pl-minstars').value);
+    parlayPool = buildParlayPool(minStars);
+    var saved = loadParlayState();
+    if (saved && parseFloat(saved.minStars) === minStars) {
+      var allValid = true;
+      var seenIds = [];
+      PARLAY_SLOTS.forEach(function(s){
+        var legs = (saved.slots[s.key]||[]).map(resolveLegById).filter(Boolean);
+        legs = legs.filter(function(l){ return seenIds.indexOf(l.legId) === -1; }); // guard against a stale save leaking a shared leg
+        parlayLegs[s.key] = legs;
+        seenIds = seenIds.concat(legs.map(function(l){ return l.legId; }));
+        if (legs.length < s.minLegs) allValid = false;
+      });
+      if (!allValid) { rebuildAllParlays(); return; }
+      renderParlays();
+    } else {
+      rebuildAllParlays();
+    }
+  }
+
+  document.getElementById('pl-minstars').addEventListener('change', function(){
+    parlayPool = buildParlayPool(parseFloat(this.value));
+    rebuildAllParlays();
+  });
+  document.getElementById('pl-rebuild-all').addEventListener('click', function(){
+    // Re-pull the pool first, not just re-run the slot-building step on the old pool --
+    // otherwise a league Carlos unchecked on the Fixtures tab after this page loaded
+    // would keep showing up in "Rebuild all 3" results until a full page reload.
+    parlayPool = buildParlayPool(parseFloat(document.getElementById('pl-minstars').value));
+    rebuildAllParlays();
+  });
+  document.getElementById('parlayList').addEventListener('click', function(e){
+    var track = e.target.closest('[data-track-parlay]');
+    if (track) { trackParlay(track.getAttribute('data-track-parlay')); return; }
+    var swap = e.target.closest('[data-swap]');
+    if (swap) { openLegPicker(swap.getAttribute('data-swap'), swap.getAttribute('data-legid')); return; }
+    var addLeg = e.target.closest('[data-addleg]');
+    if (addLeg) { openLegPicker(addLeg.getAttribute('data-addleg'), null); return; }
+    var removeLeg = e.target.closest('[data-remove-leg]');
+    if (removeLeg) {
+      var slotKey = removeLeg.getAttribute('data-remove-leg'), legId = removeLeg.getAttribute('data-legid');
+      parlayLegs[slotKey] = (parlayLegs[slotKey]||[]).filter(function(l){ return l.legId !== legId; });
+      saveParlayState();
+      // Full re-render: removing this leg may have resolved an overlap flagged on a
+      // matching leg in one of the other two parlays.
+      renderParlays();
+      return;
+    }
+  });
+  document.getElementById('lp-search').addEventListener('input', function(e){ renderLegPickerOptions(e.target.value); });
+
   // ---------- init ----------
   var gen = DATA.generatedAt ? new Date(DATA.generatedAt) : null;
   document.getElementById('genMeta').textContent = gen ? ('Updated ' + gen.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})) : '';
@@ -2130,6 +2752,7 @@
   renderTracker();
   buildPerfFilters();
   renderPerformance();
+  initParlays();
   syncFromServer();
 })();
 </script>
