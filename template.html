@@ -15,10 +15,20 @@
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#0f1115; --card:#1a1d24; --text:#e8eaed; --dim:#9aa1ac; --border:#2a2e37;
-      --accent:#4d94ff; --accent-dim:#1c2b47; --green:#4ade80; --green-bg:#0f2d1c;
-      --red:#f87171; --red-bg:#3a1414; --amber:#fbbf24; --amber-bg:#3a2c0d;
-      --star:#fbbf24; --chip-bg:#232732; --shadow:0 1px 2px rgba(0,0,0,.3),0 1px 8px rgba(0,0,0,.25);
+      /* 2026-09-17, Carlos: reskin dark mode as a cyan-on-near-black "HUD" theme,
+         matching a Rainmeter-style sci-fi desktop reference image he shared --
+         "full immersive" intensity, replacing the previous blue-grey dark theme
+         outright (not a separate third theme). --shadow now carries an actual
+         multi-layer glow (tight rim + medium glow + soft outer halo + a normal
+         drop shadow for depth) instead of a plain soft shadow -- since --shadow/
+         --border/--accent are already used broadly (.card, .pcard, .tcard,
+         dropdown panels, buttons, inputs), this cascades the glow everywhere
+         those tokens are already referenced, no per-component rewrite needed. */
+      --bg:#030a10; --card:#071722; --text:#eafeff; --dim:#5fa8bd; --border:#17c8e6;
+    --accent:#2be3ff; --accent-dim:#0a2e3a; --green:#39ffab; --green-bg:#052a1e;
+    --red:#ff4f6d; --red-bg:#2c0913; --amber:#ffb454; --amber-bg:#2c1a08;
+    --star:#ffd35c; --chip-bg:#0a1e29;
+    --shadow:0 0 0 1px rgba(43,227,255,.35), 0 0 10px rgba(43,227,255,.4), 0 0 28px rgba(43,227,255,.18), 0 2px 10px rgba(0,0,0,.65);
     }
   }
   *{box-sizing:border-box;}
@@ -31,7 +41,7 @@
   a{color:var(--accent);}
   header.top{
     position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--border);
-    padding:10px 14px 0 14px;
+    padding:10px 14px 0 14px; box-shadow:var(--shadow);
   }
   header.top h1{font-size:17px; margin:2px 0 2px 0; font-weight:700;}
   header.top .meta{font-size:11px; color:var(--dim); margin-bottom:8px;}
@@ -260,13 +270,16 @@
   .tr-filters .tr-preset-btn, .tr-filters .perf-preset-btn{background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer;}
   .tr-filters .tr-datelabel{display:flex; align-items:center; gap:4px; font-size:12px; color:var(--dim); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:5px 8px;}
   .tr-filters .tr-datelabel input[type=date]{border:none; background:none; color:var(--text); font-size:12.5px; padding:0; max-width:112px;}
+  .tr-filters .tr-datelabel select{border:none; background:none; color:var(--text); font-size:12.5px; padding:0;}
+  .tr-group-heading{font-size:13px; color:var(--dim); text-transform:uppercase; margin:28px 0 12px 2px; padding-top:16px; border-top:1px solid var(--border);}
+  .tr-group-heading:first-child{margin-top:4px; padding-top:0; border-top:none;}
   .tr-chart-wrap{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 10px 6px 10px; margin-bottom:14px;}
   .tr-chart-svg{width:100%; height:100px; display:block;}
   .tr-chart-baseline{stroke:var(--border); stroke-width:1; stroke-dasharray:3,3;}
   .tr-chart-labels{display:flex; justify-content:space-between; font-size:10.5px; color:var(--dim); margin-bottom:4px;}
   .tr-chart-labels .tr-chart-total{font-weight:800; color:var(--text); font-size:12px;}
   .tr-chart-empty{font-size:12.5px; color:var(--dim); text-align:center; padding:14px 0;}
-  .tcard{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:11px 13px; margin-bottom:9px;}
+  .tcard{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:11px 13px; margin-bottom:9px; box-shadow:var(--shadow);}
   .tcard .top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
   .tcard .rec{font-size:13px; font-weight:600;}
   .tcard .match{font-size:11.5px; color:var(--dim); margin-top:2px;}
@@ -353,6 +366,11 @@
   .leg-picker-panel .lp-item{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid var(--border); font-size:12px;}
   .leg-picker-panel .lp-item:last-child{border-bottom:none;}
   .leg-picker-panel .lp-add{flex:none; border:1px solid var(--accent); color:var(--accent); background:none; border-radius:20px; font-size:11px; padding:3px 10px; cursor:pointer;}
+  .new-parlay-panel .np-field{display:block; font-size:12px; color:var(--dim); margin-bottom:12px;}
+  .new-parlay-panel .np-field input{display:block; width:100%; margin-top:6px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13.5px; box-sizing:border-box;}
+  .new-parlay-panel .np-create{display:block; width:100%; padding:10px; border:none; border-radius:8px; background:var(--accent); color:#fff; font-size:13px; font-weight:700; cursor:pointer; margin-top:2px;}
+  .premove-btn{background:none; border:none; color:var(--dim); font-size:11px; cursor:pointer; padding:2px 4px;}
+  .premove-btn:hover{color:var(--text);}
 
   .footer-note{text-align:center; font-size:10.5px; color:var(--dim); padding:16px 10px 0 10px;}
 
@@ -364,10 +382,13 @@
     --star:#f59e0b; --chip-bg:#eef0f3; --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 8px rgba(0,0,0,.04);
   }
   :root[data-theme="dark"]{
-    --bg:#000000; --card:#0d1520; --text:#f2f5f9; --dim:#93a3b8; --border:#22303f;
-    --accent:#4d94ff; --accent-dim:#16324f; --green:#4ade80; --green-bg:#0f2d1c;
-    --red:#f87171; --red-bg:#3a1414; --amber:#fbbf24; --amber-bg:#3a2c0d;
-    --star:#fbbf24; --chip-bg:#16202c; --shadow:0 1px 2px rgba(0,0,0,.6),0 1px 12px rgba(0,0,0,.5);
+    /* same HUD cyan theme as the prefers-color-scheme block above, kept in sync
+       on purpose -- explicit dark-toggle and system-dark must look identical. */
+    --bg:#030a10; --card:#071722; --text:#eafeff; --dim:#5fa8bd; --border:#17c8e6;
+    --accent:#2be3ff; --accent-dim:#0a2e3a; --green:#39ffab; --green-bg:#052a1e;
+    --red:#ff4f6d; --red-bg:#2c0913; --amber:#ffb454; --amber-bg:#2c1a08;
+    --star:#ffd35c; --chip-bg:#0a1e29;
+    --shadow:0 0 0 1px rgba(43,227,255,.35), 0 0 10px rgba(43,227,255,.4), 0 0 28px rgba(43,227,255,.18), 0 2px 10px rgba(0,0,0,.65);
   }
   .theme-toggle-btn{
     position:absolute; top:9px; right:14px; background:var(--card); border:1px solid var(--border);
@@ -421,6 +442,14 @@
         <option value="ah">Asian Handicap</option>
       </select>
       <input type="search" id="f-team" placeholder="Search team name…">
+      <select id="fx-group">
+        <option value="none">Group: None</option>
+        <option value="league">Group: League</option>
+        <option value="date">Group: Date</option>
+        <option value="kickoff">Group: Kickoff Time</option>
+        <option value="stars">Group: Star Rating</option>
+        <option value="market">Group: Best Bet Market Type</option>
+      </select>
     </div>
     <div id="fixtureList"></div>
   </section>
@@ -433,6 +462,16 @@
       <button class="tr-preset-btn" data-preset="month">This month</button>
       <label class="tr-datelabel">From <input type="date" id="tr-from"></label>
       <label class="tr-datelabel">To <input type="date" id="tr-to"></label>
+      <label class="tr-datelabel">Group by
+        <select id="tr-group">
+          <option value="none">None</option>
+          <option value="league">League</option>
+          <option value="date">Date</option>
+          <option value="kickoff">Kickoff Time</option>
+          <option value="stars">Star Rating</option>
+          <option value="market">Best Bet Market Type</option>
+        </select>
+      </label>
     </div>
     <div class="tsum">
       <div class="box"><div class="n" id="tr-record">0-0-0</div><div class="l">Record</div></div>
@@ -497,6 +536,7 @@
         </select>
       </label>
       <button class="rebuild-btn" id="pl-rebuild-all">Rebuild all 3</button>
+      <button class="rebuild-btn" id="pl-new-parlay">+ New Parlay</button>
       <span class="pl-league-note" id="pl-league-note"></span>
       <span class="pl-overlap-note" id="pl-overlap-note"></span>
     </div>
@@ -526,6 +566,12 @@
   <input type="search" class="search" id="lp-search" placeholder="Search picks…">
   <div id="lp-options"></div>
   <button class="backdrop-close" data-close>Close</button>
+</div>
+<div class="dropdown-panel new-parlay-panel" id="new-parlay-panel">
+  <label class="np-field">Name<input type="text" id="np-name" maxlength="40" placeholder="e.g. Sunday Longshot #2"></label>
+  <label class="np-field">Target odds (American, e.g. 400 or -150)<input type="number" step="1" id="np-target" placeholder="400"></label>
+  <button class="np-create" id="np-create-btn">Create parlay</button>
+  <button class="backdrop-close" data-close>Cancel</button>
 </div>
 
 <script id="fixtures-data" type="application/json">__FIXTURES_JSON__</script>
@@ -1167,6 +1213,30 @@
   }
 
   // ---------- Top Picks tab ----------
+  // Carlos, 2026-09-16: "could we split the Today's Top 5 section into sections per
+  // Day? Currently, Today's and Tomorrow's picks are all combined" -- the pipeline's
+  // top5 rank (top_5_best_bet_flag) is assigned once across the whole evaluation
+  // window (today + tomorrow, EVALUATION_WINDOW_DAYS), not scoped per day, so a single
+  // flat "Today's Top 5" heading was silently mixing both days' fixtures together.
+  // Groups by fx.date instead and renders one heading per day (in date order, so
+  // today's section always comes first), each day's fixtures kept in their existing
+  // top5-rank order. Labels the two real cases the eval window actually produces
+  // ("Today's Top 5" / "Tomorrow's Top 5") using the viewer's local date, same as
+  // every other "today"-relative judgment call already made client-side (e.g. the
+  // kickoff-passed styling); anything further out (a wider window in the future)
+  // falls back to the app's existing fmtDay() weekday+date style so it never shows
+  // a wrong or missing relative label.
+  function topDayLabel(dateStr){
+    if (!dateStr) return 'Top 5';
+    var now = new Date();
+    var pad = function(n){ return String(n).padStart(2,'0'); };
+    var todayStr = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+    var tmw = new Date(now); tmw.setDate(tmw.getDate()+1);
+    var tomorrowStr = tmw.getFullYear()+'-'+pad(tmw.getMonth()+1)+'-'+pad(tmw.getDate());
+    if (dateStr === todayStr) return 'Today\'s Top 5';
+    if (dateStr === tomorrowStr) return 'Tomorrow\'s Top 5';
+    return 'Top 5 · ' + fmtDay(dateStr);
+  }
   function renderTop(){
     var top5 = FIXTURES.filter(function(f){ return f.top5 != null; }).sort(function(a,b){ return a.top5-b.top5; });
     var others = FIXTURES.filter(function(f){
@@ -1179,8 +1249,17 @@
     });
     var html = '';
     if (top5.length) {
-      html += '<h3 style="font-size:13px;color:var(--dim);text-transform:uppercase;margin:4px 0 8px 2px;">Today\'s Top 5</h3>';
-      html += top5.map(function(f){ return cardHtml(f); }).join('');
+      var byDay = {}, dayOrder = [];
+      top5.forEach(function(f){
+        var d = f.date || '';
+        if (!byDay[d]) { byDay[d] = []; dayOrder.push(d); }
+        byDay[d].push(f);
+      });
+      dayOrder.sort();
+      dayOrder.forEach(function(d){
+        html += '<h3 style="font-size:13px;color:var(--dim);text-transform:uppercase;margin:4px 0 8px 2px;">'+esc(topDayLabel(d))+'</h3>';
+        html += byDay[d].map(function(f){ return cardHtml(f); }).join('');
+      });
     }
     if (others.length) {
       html += '<h3 style="font-size:13px;color:var(--dim);text-transform:uppercase;margin:16px 0 8px 2px;">Other 4★+ picks</h3>';
@@ -1273,6 +1352,7 @@
         stars: document.getElementById('f-stars').value,
         market: document.getElementById('f-market').value,
         team: document.getElementById('f-team').value,
+        group: document.getElementById('fx-group').value,
         league: (leagueSelected.size === leagueSet.length) ? 'ALL' : Array.from(leagueSelected),
         time: (timeSelected.size === timeSet.length) ? 'ALL' : Array.from(timeSelected)
       }));
@@ -1291,6 +1371,8 @@
     var marketSel = document.getElementById('f-market');
     if (saved.market != null && Array.from(marketSel.options).some(function(o){ return o.value===saved.market; })) marketSel.value = saved.market;
     if (saved.team != null) document.getElementById('f-team').value = saved.team;
+    var groupSel = document.getElementById('fx-group');
+    if (saved.group != null && Array.from(groupSel.options).some(function(o){ return o.value===saved.group; })) groupSel.value = saved.group;
     if (saved.league && saved.league !== 'ALL') {
       var restoredLeagues = saved.league.filter(function(l){ return leagueSet.indexOf(l) !== -1; });
       if (restoredLeagues.length) leagueSelected = new Set(restoredLeagues);
@@ -1345,12 +1427,118 @@
     return true;
   }
 
+  // Carlos, 2026-09-17: "Oh! I wanted it in the Fixtures tab... could you please add it
+  // to the Fixtures Tab?" -- same Group-by concept the Tracker tab just got, applied to
+  // full fixture cards instead of single tracked picks. A fixture isn't tied to one
+  // market the way a tracked pick is (a card shows all 7 markets at once), so Star
+  // Rating and Best Bet Market Type group by the fixture's own highest-star real pick
+  // across every market -- the exact same "does ANY market clear the bar" logic
+  // renderTop()'s "Other 4+ picks" section already uses, via fixtureTopPick() below,
+  // rather than picking one market arbitrarily or listing a fixture under more than one
+  // bucket. League/Date/Kickoff Time group directly off the fixture's own fields, no
+  // lookup needed (unlike the Tracker tab, a fixture always has its real fx.ts).
+  function fixtureAllPicks(fx){
+    var out = [];
+    if (fx.best_bet) out.push({marketKey:'best_bet', pick: fx.best_bet});
+    if (fx.match_total) out.push({marketKey:'match_total', pick: fx.match_total});
+    if (fx.btts) out.push({marketKey:'btts', pick: fx.btts});
+    ['team_total','ml','dc','ah'].forEach(function(mk){
+      var obj = fx[mk] || {};
+      if (obj.home) out.push({marketKey:mk, pick: obj.home});
+      if (obj.away) out.push({marketKey:mk, pick: obj.away});
+    });
+    return out;
+  }
+  // Highest-star real (non-PASS) pick across every market on this fixture, or null if
+  // every market passed. Ties broken by MARKET_GROUP_ORDER (defined below, in the
+  // Tracker section -- shared between both tabs' market grouping) so the result is
+  // always deterministic rather than depending on object key order.
+  function fixtureTopPick(fx){
+    var candidates = fixtureAllPicks(fx).filter(function(c){ return c.pick && c.pick.stars != null; });
+    if (!candidates.length) return null;
+    candidates.sort(function(a,b){
+      if (b.pick.stars !== a.pick.stars) return b.pick.stars - a.pick.stars;
+      return MARKET_GROUP_ORDER.indexOf(a.marketKey) - MARKET_GROUP_ORDER.indexOf(b.marketKey);
+    });
+    return candidates[0];
+  }
+  // Buckets an already-filtered, already kickoff-ordered fixture list into labeled groups,
+  // preserving that order within each group -- same shape as groupTrackerEntries() below,
+  // kept as a separate function since a fixture card groups on fixture-level fields
+  // (league/date/ts) or its own derived top pick, not a single stored market/side/stars
+  // the way one Tracker entry already carries.
+  function groupFixtures(list, mode){
+    var buckets = {}, order = [];
+    function put(key, label){
+      if (!buckets[key]) { buckets[key] = {label: label, items: []}; order.push(key); }
+      return buckets[key];
+    }
+    list.forEach(function(fx){
+      var key, label;
+      if (mode === 'league') {
+        key = fx.league || 'unknown'; label = fx.league || 'Unknown League';
+      } else if (mode === 'date') {
+        key = fx.date || 'unknown'; label = fx.date ? fmtDay(fx.date) : 'No date';
+      } else if (mode === 'kickoff') {
+        var mins = fx.ts ? timeOfDayMinutes(fx.ts) : null;
+        if (mins == null) { key = 'unknown'; label = 'Kickoff time unavailable'; }
+        else { key = ('0'+Math.floor(mins/60)).slice(-2)+':'+('0'+(mins%60)).slice(-2); label = fmtTime(fx.ts); }
+      } else if (mode === 'stars') {
+        var topS = fixtureTopPick(fx);
+        key = topS ? topS.pick.stars.toFixed(1) : 'none';
+        label = topS ? stars(topS.pick.stars) : 'No rated picks';
+      } else { // 'market'
+        var topM = fixtureTopPick(fx);
+        key = topM ? topM.marketKey : 'none';
+        label = topM ? marketKeyLabel(topM.marketKey) : 'No rated picks';
+      }
+      put(key, label).items.push(fx);
+    });
+    var sortedOrder;
+    if (mode === 'league') {
+      sortedOrder = order.slice().sort(function(a,b){ return buckets[a].label.localeCompare(buckets[b].label); });
+    } else if (mode === 'date') {
+      sortedOrder = order.slice().sort(function(a,b){
+        if (a === 'unknown') return 1;
+        if (b === 'unknown') return -1;
+        return a.localeCompare(b); // earliest date first, matches the Fixtures tab's own kickoff-ascending order
+      });
+    } else if (mode === 'kickoff') {
+      sortedOrder = order.slice().sort(function(a,b){
+        if (a === 'unknown') return 1;
+        if (b === 'unknown') return -1;
+        return a.localeCompare(b); // chronological by time-of-day, earliest first
+      });
+    } else if (mode === 'stars') {
+      sortedOrder = order.slice().sort(function(a,b){
+        if (a === 'none') return 1;
+        if (b === 'none') return -1;
+        return parseFloat(b) - parseFloat(a); // highest confidence first
+      });
+    } else { // 'market'
+      sortedOrder = order.slice().sort(function(a,b){
+        if (a === 'none') return 1;
+        if (b === 'none') return -1;
+        return MARKET_GROUP_ORDER.indexOf(a) - MARKET_GROUP_ORDER.indexOf(b);
+      });
+    }
+    return sortedOrder.map(function(k){ return buckets[k]; });
+  }
   function renderFixtures(){
     saveFilterState();
     var list = FIXTURES.filter(passesFilters);
-    document.getElementById('fixtureList').innerHTML = list.length
-      ? list.map(function(f){ return cardHtml(f); }).join('')
-      : '<div class="empty">No fixtures match these filters.</div>';
+    if (!list.length) {
+      document.getElementById('fixtureList').innerHTML = '<div class="empty">No fixtures match these filters.</div>';
+      return;
+    }
+    var groupMode = document.getElementById('fx-group') ? document.getElementById('fx-group').value : 'none';
+    if (groupMode === 'none') {
+      document.getElementById('fixtureList').innerHTML = list.map(function(f){ return cardHtml(f); }).join('');
+    } else {
+      document.getElementById('fixtureList').innerHTML = groupFixtures(list, groupMode).map(function(g){
+        return '<h3 class="tr-group-heading">'+esc(g.label)+'</h3>'+g.items.map(function(f){ return cardHtml(f); }).join('');
+      }).join('');
+    }
   }
 
   // ---------- expand/collapse + full stats toggle (event delegation) ----------
@@ -1427,7 +1615,7 @@
   document.getElementById('league-clear').addEventListener('click', function(){ leagueSelected = new Set(); renderLeagueOptions(document.getElementById('league-search').value); updateDropdownCounts(); renderFixtures(); });
   document.getElementById('time-all').addEventListener('click', function(){ timeSelected = new Set(timeSet); renderTimeOptions(); updateDropdownCounts(); renderFixtures(); });
   document.getElementById('time-clear').addEventListener('click', function(){ timeSelected = new Set(); renderTimeOptions(); updateDropdownCounts(); renderFixtures(); });
-  ['f-day','f-stars','f-market'].forEach(function(id){
+  ['f-day','f-stars','f-market','fx-group'].forEach(function(id){
     document.getElementById(id).addEventListener('change', renderFixtures);
   });
   document.getElementById('f-team').addEventListener('input', renderFixtures);
@@ -1454,7 +1642,8 @@
     try {
       localStorage.setItem(TR_FILTER_KEY, JSON.stringify({
         from: document.getElementById('tr-from').value,
-        to: document.getElementById('tr-to').value
+        to: document.getElementById('tr-to').value,
+        group: document.getElementById('tr-group').value
       }));
     } catch(e){}
   }
@@ -1466,6 +1655,7 @@
     if (!saved) return;
     if (saved.from) document.getElementById('tr-from').value = saved.from;
     if (saved.to) document.getElementById('tr-to').value = saved.to;
+    if (saved.group) document.getElementById('tr-group').value = saved.group;
   }
   function pad2(n){ return n<10 ? '0'+n : ''+n; }
   function dateStr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
@@ -1900,41 +2090,94 @@
     });
   }
 
-  function renderTracker(){
-    renderIdentityRow();
-    var identity = getIdentity();
-    var fromVal = document.getElementById('tr-from') ? document.getElementById('tr-from').value : '';
-    var toVal = document.getElementById('tr-to') ? document.getElementById('tr-to').value : '';
-    var filterActive = !!(fromVal || toVal);
-    var arr = loadTracked().filter(function(e){
-      if (filterActive && !e.date) return false; // undated legacy entries shouldn't slip through a date filter
-      // e.date is often a full ISO timestamp ("2026-09-04T04:00:00.000Z"), but the
-      // from/to inputs are plain "YYYY-MM-DD". Comparing the raw strings made any
-      // entry dated on the "to" boundary day sort as *after* it ("...T04:00..." >
-      // "2026-09-04"), so a "to = today" filter silently hid everything from today --
-      // which is most days almost entirely custom picks, since those are what Carlos
-      // adds and checks same-day. Compare on just the date portion instead.
-      var eDay = e.date ? e.date.slice(0, 10) : e.date;
-      if (fromVal && eDay && eDay < fromVal) return false;
-      if (toVal && eDay && eDay > toVal) return false;
-      return true;
-    }).sort(function(a,b){ return b.addedAt-a.addedAt; });
-    var w=0,l=0,p=0, units=0;
-    function fmtRec(n){ return (n % 1 === 0) ? String(n) : n.toFixed(1); }
+  // Carlos, 2026-09-17: "keep the sort by Kickoff Time, but allow for a Group Option" --
+  // this was actually sorting by addedAt (most-recently-tracked first), not kickoff time,
+  // so entryKickoffSortKey() below is the real fix, not just a rename. Tracked entries
+  // never stored an exact kickoff instant (only a day-level `date`), so this looks the
+  // original fixture back up by fxId for its real `ts` -- works for anything still in the
+  // current pipeline window (today/tomorrow), the common case for reviewing picks here.
+  // An older, already-graded entry whose fixture has since scrolled out of FIXTURES falls
+  // back to its stored date at noon, so it still sorts into a sensible place even though
+  // the exact kickoff clock time is gone. Sorted descending (latest/soonest kickoff on
+  // top), matching the "newest first" feel of the addedAt-desc sort this replaces.
+  function entryKickoffTs(e){
+    var fx = findFixture(e.fxId);
+    return (fx && fx.ts) ? fx.ts : null;
+  }
+  function entryKickoffSortKey(e){
+    var ts = entryKickoffTs(e);
+    if (ts) { var d = new Date(ts); if (!isNaN(d)) return d.getTime(); }
+    if (e.date) { var d2 = new Date(String(e.date).slice(0,10)+'T12:00:00'); if (!isNaN(d2)) return d2.getTime(); }
+    return e.addedAt || 0;
+  }
+  function timeOfDayMinutes(ts){
+    var d = new Date(ts);
+    if (isNaN(d)) return null;
+    return d.getHours()*60 + d.getMinutes();
+  }
+  // Canonical market order, matches how every market already lists on a fixture card
+  // (see cardHtml()/marketRowHtml() above) rather than an alphabetical fallback.
+  var MARKET_GROUP_ORDER = ['best_bet','match_total','btts','team_total','ml','dc','ah','custom','parlay'];
+  // Buckets an already kickoff-sorted array (see renderTracker()) into labeled groups for
+  // the #tr-group selector, preserving that order within each group -- grouping never
+  // re-sorts the picks themselves, only which heading they fall under.
+  function groupTrackerEntries(arr, mode){
+    var buckets = {}, order = [];
+    function put(key, label){
+      if (!buckets[key]) { buckets[key] = {label: label, items: []}; order.push(key); }
+      return buckets[key];
+    }
     arr.forEach(function(e){
-      if (e.status==='won') w+=1;
-      else if (e.status==='half_won') w+=0.5;
-      else if (e.status==='lost') l+=1;
-      else if (e.status==='half_lost') l+=0.5;
-      else if (e.status==='push') p+=1;
-      units += profitFor(e);
+      var key, label;
+      if (mode === 'league') {
+        key = e.league || 'unknown'; label = e.league || 'Unknown League';
+      } else if (mode === 'date') {
+        key = e.date || 'unknown'; label = e.date ? fmtDay(e.date) : 'No date';
+      } else if (mode === 'kickoff') {
+        var ts = entryKickoffTs(e), mins = ts ? timeOfDayMinutes(ts) : null;
+        if (mins == null) { key = 'unknown'; label = 'Kickoff time unavailable'; }
+        else { key = ('0'+Math.floor(mins/60)).slice(-2)+':'+('0'+(mins%60)).slice(-2); label = fmtTime(ts); }
+      } else if (mode === 'stars') {
+        key = (e.stars==null) ? 'none' : e.stars.toFixed(1);
+        label = (e.stars==null) ? 'No rating' : stars(e.stars);
+      } else { // 'market'
+        key = e.marketKey || 'unknown'; label = marketKeyLabel(e.marketKey);
+      }
+      put(key, label).items.push(e);
     });
-    document.getElementById('tr-record').textContent = fmtRec(w)+'-'+fmtRec(l)+'-'+fmtRec(p);
-    var decided = w+l;
-    document.getElementById('tr-hitrate').textContent = decided ? Math.round(100*w/decided)+'%' : '–';
-    document.getElementById('tr-units').textContent = (units>=0?'+':'') + units.toFixed(2);
+    var sortedOrder;
+    if (mode === 'league') {
+      sortedOrder = order.slice().sort(function(a,b){ return buckets[a].label.localeCompare(buckets[b].label); });
+    } else if (mode === 'date') {
+      sortedOrder = order.slice().sort(function(a,b){
+        if (a === 'unknown') return 1;
+        if (b === 'unknown') return -1;
+        return b.localeCompare(a); // most recent date first, matches the kickoff-desc sort
+      });
+    } else if (mode === 'kickoff') {
+      sortedOrder = order.slice().sort(function(a,b){
+        if (a === 'unknown') return 1;
+        if (b === 'unknown') return -1;
+        return a.localeCompare(b); // chronological by time-of-day, earliest first
+      });
+    } else if (mode === 'stars') {
+      sortedOrder = order.slice().sort(function(a,b){
+        if (a === 'none') return 1;
+        if (b === 'none') return -1;
+        return parseFloat(b) - parseFloat(a); // highest confidence first
+      });
+    } else { // 'market'
+      sortedOrder = order.slice().sort(function(a,b){
+        var ia = MARKET_GROUP_ORDER.indexOf(a), ib = MARKET_GROUP_ORDER.indexOf(b);
+        if (ia === -1) ia = MARKET_GROUP_ORDER.length;
+        if (ib === -1) ib = MARKET_GROUP_ORDER.length;
+        return ia - ib || a.localeCompare(b);
+      });
+    }
+    return sortedOrder.map(function(k){ return buckets[k]; });
+  }
+  function trackerCardHtml(e, identity){
 
-    document.getElementById('trackerList').innerHTML = arr.length ? arr.map(function(e){
       var mine = !!(identity && e.name === identity.name);
       var head = '<div class="top"><div><div class="rec">'+esc(e.rec)+comboChipHtml(e)+'</div><div class="match">'+esc(e.matchLabel)+' · '+esc(e.league)+' · '+esc(fmtDay(e.date))+' · '+esc(e.name||'?')+'</div></div>'+
         (mine ? '<button class="remove-btn" data-remove="'+esc(e.trackId)+'">✕</button>' : '')+
@@ -1959,7 +2202,52 @@
           '<button class="status-btn'+(e.status==='lost'?' lost':'')+'" data-status="lost" data-id="'+esc(e.trackId)+'">Lost</button>'+
         '</div>'+
       '</div>';
-    }).join('') : '<div class="empty">No tracked bets yet. Tap a pick in Top Picks or Fixtures and hit "Track".</div>';
+  }
+  function renderTracker(){
+    renderIdentityRow();
+    var identity = getIdentity();
+    var fromVal = document.getElementById('tr-from') ? document.getElementById('tr-from').value : '';
+    var toVal = document.getElementById('tr-to') ? document.getElementById('tr-to').value : '';
+    var filterActive = !!(fromVal || toVal);
+    var arr = loadTracked().filter(function(e){
+      if (filterActive && !e.date) return false; // undated legacy entries shouldn't slip through a date filter
+      // e.date is often a full ISO timestamp ("2026-09-04T04:00:00.000Z"), but the
+      // from/to inputs are plain "YYYY-MM-DD". Comparing the raw strings made any
+      // entry dated on the "to" boundary day sort as *after* it ("...T04:00..." >
+      // "2026-09-04"), so a "to = today" filter silently hid everything from today --
+      // which is most days almost entirely custom picks, since those are what Carlos
+      // adds and checks same-day. Compare on just the date portion instead.
+      var eDay = e.date ? e.date.slice(0, 10) : e.date;
+      if (fromVal && eDay && eDay < fromVal) return false;
+      if (toVal && eDay && eDay > toVal) return false;
+      return true;
+    }).sort(function(a,b){ return entryKickoffSortKey(b)-entryKickoffSortKey(a); });
+    var w=0,l=0,p=0, units=0;
+    function fmtRec(n){ return (n % 1 === 0) ? String(n) : n.toFixed(1); }
+    arr.forEach(function(e){
+      if (e.status==='won') w+=1;
+      else if (e.status==='half_won') w+=0.5;
+      else if (e.status==='lost') l+=1;
+      else if (e.status==='half_lost') l+=0.5;
+      else if (e.status==='push') p+=1;
+      units += profitFor(e);
+    });
+    document.getElementById('tr-record').textContent = fmtRec(w)+'-'+fmtRec(l)+'-'+fmtRec(p);
+    var decided = w+l;
+    document.getElementById('tr-hitrate').textContent = decided ? Math.round(100*w/decided)+'%' : '–';
+    document.getElementById('tr-units').textContent = (units>=0?'+':'') + units.toFixed(2);
+
+    var groupMode = document.getElementById('tr-group') ? document.getElementById('tr-group').value : 'none';
+    if (!arr.length) {
+      document.getElementById('trackerList').innerHTML = '<div class="empty">No tracked bets yet. Tap a pick in Top Picks or Fixtures and hit "Track".</div>';
+    } else if (groupMode === 'none') {
+      document.getElementById('trackerList').innerHTML = arr.map(function(e){ return trackerCardHtml(e, identity); }).join('');
+    } else {
+      document.getElementById('trackerList').innerHTML = groupTrackerEntries(arr, groupMode).map(function(g){
+        return '<h3 class="tr-group-heading">'+esc(g.label)+'</h3>'+g.items.map(function(e){ return trackerCardHtml(e, identity); }).join('');
+      }).join('');
+    }
+
 
     document.querySelectorAll('[data-stake]').forEach(function(inp){
       inp.addEventListener('change', function(){ updateStake(inp.getAttribute('data-stake'), inp.value); });
@@ -1981,6 +2269,7 @@
   });
   document.getElementById('tr-from').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
   document.getElementById('tr-to').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
+  document.getElementById('tr-group').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
   document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
   // ---------- Performance tab ----------
@@ -2350,12 +2639,24 @@
   // order doesn't jump around.
   var PARLAY_BUILD_ORDER = ['bankroll', 'realistic', 'longshot'];
   var PARLAY_STATE_KEY = 'matchDayParlayState_v1';
+  var CUSTOM_PARLAY_KEY = 'matchDayCustomParlays_v1';
   var PARLAY_CANDIDATE_CAP = 14;
   var MK_SHORT = {best_bet:'Best Bet', match_total:'Total', btts:'BTTS', team_total:'Team Total', ml:'ML', dc:'DC', ah:'AH'};
 
   var parlayPool = [];
   var parlayLegs = {longshot: [], realistic: [], bankroll: []};
   var legPickerTarget = null; // {slotKey, replaceLegId}
+  // Carlos, 2026-09-17: "now that I have the parlay legs visible, I want to be able to
+  // create more parlays" -- on top of the 3 auto-built slots above, any number of
+  // additional, purely manual parlays Carlos names and sets his own target for. They
+  // reuse every existing per-slot mechanism (parlayLegs[key], the leg picker, Track this
+  // Parlay) since those were already generic on slot.key -- only "which slots exist" and
+  // "where do they persist" needed to grow. Never auto-built/rebuilt by "Rebuild all 3"
+  // (PARLAY_BUILD_ORDER stays fixed-3-only on purpose) and persisted separately from
+  // PARLAY_STATE_KEY so a custom parlay is never wiped by the fixed-3 rebuild-on-minStars-
+  // change logic in initParlays().
+  var customParlaySlots = [];
+  function allParlaySlots(){ return PARLAY_SLOTS.concat(customParlaySlots); }
 
   function americanToDecimal(o){
     if (o == null || isNaN(o)) return null;
@@ -2457,7 +2758,7 @@
   // (a fixture can't repeat WITHIN one slot -- see usesSameFixture/usedFxIdsInSlot).
   function crossParlayFxMap(){
     var map = {};
-    PARLAY_SLOTS.forEach(function(s){
+    allParlaySlots().forEach(function(s){
       var seenInSlot = {};
       (parlayLegs[s.key]||[]).forEach(function(l){
         if (seenInSlot[l.fxId]) return;
@@ -2564,6 +2865,38 @@
   function loadParlayState(){
     try { return JSON.parse(localStorage.getItem(PARLAY_STATE_KEY) || 'null'); } catch(e){ return null; }
   }
+  function persistParlays(){ saveParlayState(); saveCustomParlays(); }
+  function saveCustomParlays(){
+    try {
+      var out = customParlaySlots.map(function(s){
+        return {key: s.key, name: s.name, targetOdds: s.targetOdds, minLegs: s.minLegs,
+                legIds: (parlayLegs[s.key]||[]).map(function(l){ return l.legId; })};
+      });
+      localStorage.setItem(CUSTOM_PARLAY_KEY, JSON.stringify(out));
+    } catch(e){}
+  }
+  function loadCustomParlays(){
+    // Independent of PARLAY_STATE_KEY/minStars on purpose -- a custom parlay is Carlos's
+    // own creation, not something the app auto-builds, so it should never get silently
+    // wiped just because he changed the confidence floor. A leg that no longer resolves
+    // (e.g. it fell below a since-raised floor) is quietly dropped rather than deleting
+    // the whole parlay.
+    customParlaySlots = [];
+    try {
+      var saved = JSON.parse(localStorage.getItem(CUSTOM_PARLAY_KEY) || '[]');
+      saved.forEach(function(s){
+        customParlaySlots.push({key: s.key, name: s.name, targetOdds: s.targetOdds, minLegs: s.minLegs || 2, custom: true});
+        parlayLegs[s.key] = (s.legIds || []).map(resolveLegById).filter(Boolean);
+      });
+    } catch(e){}
+  }
+  function createCustomParlay(name, targetOdds){
+    var key = 'custom_' + Date.now();
+    customParlaySlots.push({key: key, name: name, targetOdds: targetOdds, minLegs: 2, custom: true});
+    parlayLegs[key] = [];
+    saveCustomParlays();
+    renderParlays();
+  }
 
   function parlayTrackId(slotKey){
     // One trackable entity per slot per day -- editing legs and re-tracking updates the
@@ -2582,9 +2915,13 @@
     var tracked = isTracked(baseTrackId);
     var trackedEntry = tracked ? findTrackedEntry(baseTrackId) : null;
     var minStarsLabel = document.getElementById('pl-minstars').value;
+    var removeBtnHtml = slot.custom ? '<button class="premove-btn" data-remove-parlay="'+esc(slot.key)+'" title="Remove this parlay (does not un-track it if already tracked)">✕ Remove</button>' : '';
     if (!legs.length) {
-      return '<div class="pcard" data-slot="'+esc(slot.key)+'"><div class="phead"><div class="ptitle"><span class="pname">'+esc(slot.name)+'</span><span class="ptarget">Target '+fmtAmerican(slot.targetOdds)+'</span></div></div>'+
-        '<div class="pempty">Not enough distinct '+esc(minStarsLabel)+'★+ picks left today to build a '+slot.minLegs+'-leg parlay here (the other two parlays may already be using the best ones). Try lowering the confidence floor above, or free up legs by editing the other parlays.</div>'+
+      var emptyMsg = slot.custom
+        ? 'No legs yet -- use "+ Add a leg" below to build this parlay from today\'s picks.'
+        : 'Not enough distinct '+esc(minStarsLabel)+'★+ picks left today to build a '+slot.minLegs+'-leg parlay here (the other two parlays may already be using the best ones). Try lowering the confidence floor above, or free up legs by editing the other parlays.';
+      return '<div class="pcard" data-slot="'+esc(slot.key)+'"><div class="phead"><div class="ptitle"><span class="pname">'+esc(slot.name)+'</span><span class="ptarget">Target '+fmtAmerican(slot.targetOdds)+'</span>'+removeBtnHtml+'</div></div>'+
+        '<div class="pempty">'+emptyMsg+'</div>'+
         '<button class="padd-leg-btn" data-addleg="'+esc(slot.key)+'">+ Add a leg</button></div>';
     }
     var belowMin = legs.length < slot.minLegs;
@@ -2614,7 +2951,7 @@
     var defaultStake = trackedEntry && trackedEntry.stake != null ? trackedEntry.stake : stakeForWin1(american);
     return '<div class="pcard" data-slot="'+esc(slot.key)+'">'+
       '<div class="phead">'+
-        '<div class="ptitle"><span class="pname">'+esc(slot.name)+'</span><span class="ptarget">Target '+fmtAmerican(slot.targetOdds)+'</span></div>'+
+        '<div class="ptitle"><span class="pname">'+esc(slot.name)+'</span><span class="ptarget">Target '+fmtAmerican(slot.targetOdds)+'</span>'+removeBtnHtml+'</div>'+
         '<div class="podds"><span class="pnum">'+fmtAmerican(american)+'</span><span class="plabel">'+legs.length+'-leg combined'+(usesModelPrice?' · incl. model price':'')+'</span>'+
           '<span class="podds-badge '+(nearTarget?'near':'off')+'">'+(nearTarget?'near target':'off target')+'</span></div>'+
       '</div>'+
@@ -2630,7 +2967,7 @@
   }
 
   function renderParlaySlotDom(slotKey){
-    var slot = PARLAY_SLOTS.filter(function(s){ return s.key===slotKey; })[0];
+    var slot = allParlaySlots().filter(function(s){ return s.key===slotKey; })[0];
     if (!slot) return;
     var el = document.querySelector('.pcard[data-slot="'+slotKey+'"]');
     var html = parlayCardHtml(slot);
@@ -2638,7 +2975,7 @@
     updateParlayOverlapNote();
   }
   function renderParlays(){
-    document.getElementById('parlayList').innerHTML = PARLAY_SLOTS.map(parlayCardHtml).join('');
+    document.getElementById('parlayList').innerHTML = allParlaySlots().map(parlayCardHtml).join('');
     updateParlayOverlapNote();
   }
 
@@ -2651,25 +2988,37 @@
   function renderLegPickerOptions(filterText){
     var box = document.getElementById('lp-options');
     var ft = (filterText||'').toLowerCase();
-    var usedElsewhere = [];
-    PARLAY_SLOTS.forEach(function(s){
+    // Carlos, 2026-09-16: found a 5-star BTTS leg missing from this list entirely because
+    // it was already sitting in Bankroll Builder -- "I think it should be a warning, but
+    // the leg should be available." Same-game-parlay legs are legitimate combos in real
+    // sportsbooks, and this list already has a same-fixture-in-one-parlay hard rule to
+    // prevent double-counting a single game's correlated markets within ONE parlay -- reusing
+    // a leg ACROSS separate parlays is a different, much milder correlation (two independent
+    // tickets happen to both ride the same bet), exactly what crossParlayFxMap()'s ⚠ chip on
+    // the rendered parlay cards already flags-not-blocks for shared fixtures. So this no
+    // longer excludes a leg just because another slot already has it -- it's listed with a
+    // ⚠ chip naming which parlay(s) it's already in, same styling/wording as that chip.
+    var usedElsewhereMap = {};
+    allParlaySlots().forEach(function(s){
       (parlayLegs[s.key]||[]).forEach(function(l){
-        if (l.legId !== legPickerTarget.replaceLegId) usedElsewhere.push(l.legId);
+        if (l.legId === legPickerTarget.replaceLegId) return; // being swapped out of THIS slot -- not "elsewhere"
+        (usedElsewhereMap[l.legId] = usedElsewhereMap[l.legId] || []).push(s.name);
       });
     });
     var usedFxIdsInSlot = (parlayLegs[legPickerTarget.slotKey]||[])
       .filter(function(l){ return l.legId !== legPickerTarget.replaceLegId; })
       .map(function(l){ return l.fxId; });
     var opts = parlayPool.filter(function(l){
-      if (usedElsewhere.indexOf(l.legId) !== -1) return false; // keep the three parlays' legs distinct
       if (usedFxIdsInSlot.indexOf(l.fxId) !== -1) return false; // no two legs from the same fixture in one parlay
       if (ft && (l.matchLabel+' '+l.label+' '+l.rec).toLowerCase().indexOf(ft) === -1) return false;
       return true;
     });
     box.innerHTML = opts.length ? opts.map(function(l){
-      return '<div class="lp-item"><span>'+esc(l.matchLabel)+' — '+esc(l.label)+': '+esc(l.rec)+' <span class="stars">'+esc(stars(l.stars))+'</span> <b>'+fmtAmerican(l.odds)+'</b>'+(l.oddsSource==='model'?' <span class="model-price-chip">model</span>':'')+'</span>'+
+      var usedIn = usedElsewhereMap[l.legId];
+      var usedChip = usedIn ? ' <span class="pleg-overlap-chip" title="Not blocked -- just flagging the correlated risk: this leg is also in '+esc(usedIn.join(' and '))+'.">⚠ also in '+esc(usedIn.join(', '))+'</span>' : '';
+      return '<div class="lp-item"><span>'+esc(l.matchLabel)+' — '+esc(l.label)+': '+esc(l.rec)+' <span class="stars">'+esc(stars(l.stars))+'</span> <b>'+fmtAmerican(l.odds)+'</b>'+(l.oddsSource==='model'?' <span class="model-price-chip">model</span>':'')+usedChip+'</span>'+
         '<button class="lp-add" data-lp-pick="'+esc(l.legId)+'">Add</button></div>';
-    }).join('') : '<div class="pempty">No other eligible picks match (they may already be used in one of the three parlays).</div>';
+    }).join('') : '<div class="pempty">No eligible picks match right now -- try a lower confidence floor, a different day/league filter, or clear the search.</div>';
     box.querySelectorAll('[data-lp-pick]').forEach(function(btn){
       btn.addEventListener('click', function(){
         var leg = resolveLegById(btn.getAttribute('data-lp-pick'));
@@ -2682,7 +3031,7 @@
         } else {
           arr.push(leg);
         }
-        saveParlayState();
+        persistParlays();
         // Full re-render, not just this slot: adding/swapping a leg here can newly overlap
         // (or resolve an overlap with) a fixture already used in one of the OTHER two
         // parlays, and their ⚠ chips need to reflect that too.
@@ -2693,7 +3042,7 @@
   }
 
   function trackParlay(slotKey){
-    var slot = PARLAY_SLOTS.filter(function(s){ return s.key===slotKey; })[0];
+    var slot = allParlaySlots().filter(function(s){ return s.key===slotKey; })[0];
     var legs = parlayLegs[slotKey] || [];
     if (legs.length < 2) { alert('Add at least two legs before tracking this parlay.'); return; }
     var identity = ensureIdentity();
@@ -2738,6 +3087,7 @@
   function initParlays(){
     var minStars = parseFloat(document.getElementById('pl-minstars').value);
     parlayPool = buildParlayPool(minStars);
+    loadCustomParlays();
     var saved = loadParlayState();
     if (saved && parseFloat(saved.minStars) === minStars) {
       var allValid = true;
@@ -2767,6 +3117,21 @@
     parlayPool = buildParlayPool(parseFloat(document.getElementById('pl-minstars').value));
     rebuildAllParlays();
   });
+  document.getElementById('pl-new-parlay').addEventListener('click', function(){
+    document.getElementById('np-name').value = '';
+    document.getElementById('np-target').value = '';
+    openPanel(document.getElementById('new-parlay-panel'));
+    document.getElementById('np-name').focus();
+  });
+  document.getElementById('np-create-btn').addEventListener('click', function(){
+    var name = document.getElementById('np-name').value.trim();
+    var targetRaw = document.getElementById('np-target').value.trim();
+    var target = parseFloat(targetRaw);
+    if (!name) { alert('Give this parlay a name.'); return; }
+    if (!targetRaw || isNaN(target) || Math.abs(target) < 100) { alert('Enter a target payout as American odds (e.g. 400 or -150).'); return; }
+    createCustomParlay(name, target);
+    closeAllPanels();
+  });
   document.getElementById('parlayList').addEventListener('click', function(e){
     var track = e.target.closest('[data-track-parlay]');
     if (track) { trackParlay(track.getAttribute('data-track-parlay')); return; }
@@ -2778,9 +3143,21 @@
     if (removeLeg) {
       var slotKey = removeLeg.getAttribute('data-remove-leg'), legId = removeLeg.getAttribute('data-legid');
       parlayLegs[slotKey] = (parlayLegs[slotKey]||[]).filter(function(l){ return l.legId !== legId; });
-      saveParlayState();
+      persistParlays();
       // Full re-render: removing this leg may have resolved an overlap flagged on a
       // matching leg in one of the other two parlays.
+      renderParlays();
+      return;
+    }
+    var removeParlay = e.target.closest('[data-remove-parlay]');
+    if (removeParlay) {
+      var pk = removeParlay.getAttribute('data-remove-parlay');
+      var pslot = customParlaySlots.filter(function(s){ return s.key===pk; })[0];
+      if (!pslot) return;
+      if (!confirm('Remove "'+pslot.name+'"? This won\'t un-track it from the Tracker tab if you already tracked it.')) return;
+      customParlaySlots = customParlaySlots.filter(function(s){ return s.key !== pk; });
+      delete parlayLegs[pk];
+      saveCustomParlays();
       renderParlays();
       return;
     }
