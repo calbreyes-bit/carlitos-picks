@@ -106,6 +106,13 @@
   }
   .bb-line .stars{color:var(--star); font-weight:700; white-space:nowrap;}
   .bb-line.pass{background:var(--chip-bg); color:var(--dim); border-color:var(--border);}
+  /* Carlos, 2026-09-16: the summary pill only ever showed fx.best_bet -- so a fixture
+     whose real Best Bet was a weak straight pick (or a flat PASS) still hid a much
+     higher-star pick on another market that only missed Best Bet because its price was
+     too short for the straight-bet floor. Amber, not the usual accent blue, so it reads
+     at a glance as "your top play here is a parlay leg, not a straight bet" rather than
+     looking identical to a normal Best Bet. */
+  .bb-line.parlay-alt{background:var(--amber-bg); color:var(--text); border-color:var(--amber);}
 
   /* expanded */
   .expand{border-top:1px solid var(--border); padding:12px 13px 14px 13px; display:none;}
@@ -1073,7 +1080,46 @@
     return out;
   }
 
+  // Carlos, 2026-09-16 (continued): "when there is a Best Bet with the minimum selected
+  // on the filter we should show that suggestion, just like it is working now" -- but
+  // for FK Kukesi vs Pogradeci, the Best Bet slot was a real 1-star ML pick while Team
+  // Total sat at 5 stars, priced out of Best Bet on the -200 floor; for Lugano vs FC St.
+  // Gallen, Best Bet was a flat PASS while BTTS sat at 5 stars, same reason. Both only
+  // showed up in the filtered list because the Fixtures tab's "Best Bet or Parlay Leg"
+  // matching (see passesFilters above) already looks past fx.best_bet at every market --
+  // this mirrors that same "look at every market" idea in the summary pill itself, using
+  // the exact same Parlay Leg eligibility test (isParlayLegEligible / #pl-minstars) the
+  // chip elsewhere on the page already uses, so "Parlay Leg" means the same thing
+  // everywhere on this page.
+  function altParlayLegPick(fx){
+    var candidates = [];
+    function consider(marketKey, side, pick){
+      if (!isParlayLegEligible(fx, marketKey, side, pick)) return;
+      candidates.push({pick: pick, stars: pick.stars, odds: legOddsFor(fx, marketKey, side, pick).odds});
+    }
+    consider('match_total', null, fx.match_total);
+    consider('btts', null, fx.btts);
+    ['team_total','ml','dc','ah'].forEach(function(mk){
+      var obj = fx[mk] || {};
+      consider(mk, 'home', obj.home);
+      consider(mk, 'away', obj.away);
+    });
+    if (!candidates.length) return null;
+    candidates.sort(function(a,b){ return b.stars - a.stars || (b.odds - a.odds); });
+    return candidates[0];
+  }
+
   function bestBetSummaryLine(fx){
+    var bbStars = (fx.best_bet && fx.best_bet.stars != null) ? fx.best_bet.stars : -Infinity;
+    var alt = altParlayLegPick(fx);
+    // Only swap in the alt when it's a genuinely higher-confidence pick than whatever
+    // Best Bet is showing (a real pick, or nothing at all on a PASS) -- a Best Bet that
+    // already matches or beats every other market's stars keeps showing exactly as
+    // before, unchanged.
+    if (alt && alt.stars > bbStars) {
+      return '<div class="bb-line parlay-alt"><span class="stars">'+esc(stars(alt.stars))+'</span><span>'+esc(alt.pick.rec)+'</span>'+
+        '<span class="parlay-leg-chip" title="Priced too short for a straight Best Bet -- shown here as your strongest parlay-leg candidate for this game instead">Parlay Leg</span></div>';
+    }
     if (fx.best_bet && fx.best_bet.stars != null) {
       return '<div class="bb-line"><span class="stars">'+esc(stars(fx.best_bet.stars))+'</span><span>'+esc(fx.best_bet.rec)+'</span></div>';
     }
