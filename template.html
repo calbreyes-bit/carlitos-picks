@@ -139,6 +139,7 @@
   .h2h-box .row1 b{color:var(--text);}
   .h2h-last5{display:flex; flex-wrap:wrap; gap:5px;}
   .h2h-chip{background:var(--card); border:1px solid var(--border); border-radius:6px; padding:2px 6px; font-size:10.5px;}
+  .h2h-venue{display:inline-block; font-size:9px; font-weight:800; letter-spacing:.02em; padding:1px 5px; border-radius:8px; margin-right:5px; background:var(--chip-bg); border:1px solid var(--border); color:var(--dim);}
 
   /* Per-team "last 10 results" cards -- reuses .moves-row/.moves-overview for the
      stack-on-phone/side-by-side-at-480px card layout and .form-dot for the W/D/L chip,
@@ -1064,6 +1065,19 @@
     }).join('');
   }
 
+  // h2h.last5 entries are formatted "H W 2-1 2026-09-16" / "A L 1-3 2025-09-09" -- the
+  // leading H/A says whether THIS fixture's HOME team was playing at home or away in
+  // that specific past meeting (added via the 2026-09-17 SQL migration). Carlos,
+  // 2026-09-17: "it is not very clear if the match was Away or at Home. It would be
+  // good to know because teams may have an edge at home, but not away." Older cached
+  // fixtures.json generated before that migration ran won't have the prefix yet --
+  // falls back to rendering the plain string unchanged so those chips still work.
+  function h2hChipHtml(entry){
+    var m = /^([HA])\s+(.*)$/.exec(entry);
+    if (!m) return '<span class="h2h-chip">'+esc(entry)+'</span>';
+    return '<span class="h2h-chip"><span class="h2h-venue" title="'+(m[1]==='H'?'Home team was at home':'Home team was away')+'">'+m[1]+'</span>'+esc(m[2])+'</span>';
+  }
+
   function snapshotHtml(fx){
     var snap = fx.snapshot || {};
     var h = snap.home || {}, a = snap.away || {};
@@ -1081,7 +1095,7 @@
     }
     var h2h = snap.h2h || {};
     var h2hHtml = '<div class="h2h-box"><div class="row1"><span>H2H played: <b>'+(h2h.played!=null?h2h.played:'0')+'</b></span><span>Avg goals: <b>'+(h2h.avgGoals!=null?h2h.avgGoals:'–')+'</b></span><span>BTTS: <b>'+(h2h.bttsPct!=null?h2h.bttsPct+'%':'–')+'</b></span></div>'+
-      (h2h.last5 && h2h.last5.length ? '<div class="h2h-last5">'+h2h.last5.map(function(m){return '<span class="h2h-chip">'+esc(m)+'</span>';}).join('')+'</div>' : '<div style="font-size:11px;color:var(--dim);">No recent meetings on record</div>')+
+      (h2h.last5 && h2h.last5.length ? '<div class="h2h-last5">'+h2h.last5.map(h2hChipHtml).join('')+'</div>' : '<div style="font-size:11px;color:var(--dim);">No recent meetings on record</div>')+
     '</div>';
     return '<div class="snapshot-grid">'+col(fx.home, h, fx.homeLogo)+col(fx.away, a, fx.awayLogo)+'</div>' + h2hHtml;
   }
