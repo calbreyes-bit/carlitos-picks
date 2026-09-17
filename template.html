@@ -339,6 +339,8 @@
   @keyframes live-pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
   @media (prefers-reduced-motion: reduce){ .live-score-chip.live::before{animation:none;} }
   .tr-live-refresh{display:flex; align-items:center; gap:8px; margin:10px 0;}
+  .tr-refresh-btn{background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer;}
+  .tr-refresh-btn:disabled{opacity:.6; cursor:default;}
   .tr-live-updated{font-size:11px; color:var(--dim);}
 
   /* ---------- Parlay Builder tab ---------- */
@@ -497,7 +499,7 @@
     </div>
     <div class="tr-chart-wrap" id="tr-chart-wrap"></div>
     <div id="identityRow" class="identity-row"></div>
-    <div class="tr-live-refresh"><button id="tr-refresh-scores" class="tr-preset-btn">↻ Refresh live scores</button><span id="tr-live-updated" class="tr-live-updated"></span></div>
+    <div class="tr-live-refresh"><button id="tr-refresh-scores" class="tr-refresh-btn">↻ Refresh live scores</button><span id="tr-live-updated" class="tr-live-updated"></span></div>
     <div id="trackerList"></div>
   </section>
 
