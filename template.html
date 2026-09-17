@@ -333,6 +333,13 @@
   .status-chip.won, .status-chip.half_won{background:var(--green-bg); color:var(--green);}
   .status-chip.lost, .status-chip.half_lost{background:var(--red-bg); color:var(--red);}
   .status-chip.push{background:var(--amber-bg); color:var(--amber);}
+  .live-score-chip{display:inline-block; margin-top:4px; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; background:var(--chip-bg); color:var(--text); border:1px solid var(--border);}
+  .live-score-chip.live{background:var(--red-bg); color:var(--red); border-color:transparent;}
+  .live-score-chip.live::before{content:'\25cf'; margin-right:4px; animation:live-pulse 1.4s ease-in-out infinite;}
+  @keyframes live-pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+  @media (prefers-reduced-motion: reduce){ .live-score-chip.live::before{animation:none;} }
+  .tr-live-refresh{display:flex; align-items:center; gap:8px; margin:10px 0;}
+  .tr-live-updated{font-size:11px; color:var(--dim);}
 
   /* ---------- Parlay Builder tab ---------- */
   .parlay-controls{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:14px;}
@@ -490,6 +497,7 @@
     </div>
     <div class="tr-chart-wrap" id="tr-chart-wrap"></div>
     <div id="identityRow" class="identity-row"></div>
+    <div class="tr-live-refresh"><button id="tr-refresh-scores" class="tr-preset-btn">↻ Refresh live scores</button><span id="tr-live-updated" class="tr-live-updated"></span></div>
     <div id="trackerList"></div>
   </section>
 
@@ -590,6 +598,13 @@
   "use strict";
   var DATA = JSON.parse(document.getElementById('fixtures-data').textContent || '{"fixtures":[]}');
   var FIXTURES = DATA.fixtures || [];
+  // Final scores for pending tracker picks that AREN'T today's games -- baked in
+  // by push_soccer_tracker_v6.py's attach_previous_scores_for_pending_picks() from
+  // soccer.fixtures (the permanent archive), refreshed only as of the last pipeline
+  // run (not live). Today's games instead come from TRACKER_LIVE_SCORES, fetched
+  // fresh on every syncFromServer() call -- see liveScoreChipHtml() below for how
+  // the two are combined.
+  var PREVIOUS_SCORES = DATA.previousScores || {};
 
   // ---- theme (light/dark toggle, localStorage, per browser; overrides system default) ----
   var THEME_KEY = 'matchDayTheme_v1';
@@ -1713,6 +1728,16 @@
   var IDENTITY_KEY = 'matchDayIdentity_v1';
   var TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwGW4m2xudKSRI-lWyJboaEKwMG2OGycICAh2YoHFQBB-LbyaE9jETwBeOSypbtroUt/exec';
   var STATUS_LABELS = {pending:'Pending', won:'Won', half_won:'½ Won', push:'Push', half_lost:'½ Lost', lost:'Lost'};
+  // Live scores for PENDING tracked picks, keyed by fixture id -- populated by
+  // syncFromServer() from TrackerSync.gs's doGet() response (server-side
+  // api-football lookup, see that file's own 2026-09-17 comment -- the browser
+  // never touches the API key). Empty until the first successful sync, and stays
+  // empty forever on an older TrackerSync.gs deployment that doesn't send
+  // `liveScores` yet -- degrades to no badge shown, same graceful-fallback pattern
+  // as the H2H venue badge above.
+  var TRACKER_LIVE_SCORES = {};
+  var LIVE_IN_PLAY = {'1H':1,'HT':1,'2H':1,'ET':1,'BT':1,'P':1,'SUSP':1,'INT':1,'LIVE':1};
+  var LIVE_FINISHED = {'FT':1,'AET':1,'PEN':1,'ABD':1,'AWD':1,'WO':1,'CANC':1};
 
   // ---- tracker date-range filter (localStorage, per browser) ----
   var TR_FILTER_KEY = 'matchDayTrackerFilters_v1';
@@ -1852,12 +1877,24 @@
     return fetch(TRACKER_SYNC_URL).then(function(r){ return r.json(); }).then(function(data){
       if (!data || !data.ok || !Array.isArray(data.picks)) return;
       saveTracked(data.picks.map(serverRowToEntry));
+      TRACKER_LIVE_SCORES = (data.liveScores && typeof data.liveScores === 'object') ? data.liveScores : {};
       renderTracker();
       resyncAllTrackButtons();
       buildPerfFilters(); // fresh sync can introduce a league/type/name the Performance filters haven't seen yet
       renderPerformance();
       if (typeof renderParlays === 'function') renderParlays(); // reflect Tracked state if a parlay was tracked elsewhere
+      updateLiveScoresTimestamp_();
     }).catch(function(){ /* offline or unreachable -- keep showing the last-synced cache */ });
+  }
+
+  // Small "Updated H:MM" label next to the refresh button, so it's clear the live
+  // scores (and everything else synced from the sheet) aren't stale without having
+  // to guess. Updated after every successful syncFromServer() call, not just manual
+  // refreshes -- the periodic/identity-triggered syncs count too.
+  function updateLiveScoresTimestamp_(){
+    var el = document.getElementById('tr-live-updated');
+    if (!el) return;
+    el.textContent = 'Updated ' + new Date().toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'});
   }
 
   function toggleTrack(btn){
@@ -2254,10 +2291,45 @@
     }
     return sortedOrder.map(function(k){ return buckets[k]; });
   }
+  // Live/previous-score badge for a pending tracked entry -- Carlos, 2026-09-17: "can
+  // we see these on the dashboard though?", then "this is only for the today's games,
+  // we could get the previous scores from the fixtures table." Two sources, checked in
+  // order:
+  //   1. TRACKER_LIVE_SCORES -- TODAY's pending picks, fetched fresh by TrackerSync.gs
+  //      from api-football on every syncFromServer() call (real-time, refreshable with
+  //      the "Refresh live scores" button below).
+  //   2. PREVIOUS_SCORES -- older pending picks (any earlier day), baked in by
+  //      push_soccer_tracker_v6.py from soccer.fixtures (the permanent archive) as of
+  //      the last regular pipeline run -- not live, no separate refresh control for it
+  //      (it only changes when the pipeline runs again), styled as a plain "FT" chip
+  //      rather than the pulsing "LIVE" one so it's clear which kind it is.
+  // Shows nothing for a fixture that hasn't kicked off yet (no point badging
+  // "0-0 Not Started" on every future pending pick) or when neither source has
+  // anything for it (not fetched yet, older than the archive covers, etc).
+  function liveScoreChipHtml(e){
+    if (e.status !== 'pending') return '';
+    var fxId = String(e.fxId||'');
+    var live = TRACKER_LIVE_SCORES[fxId];
+    if (live && live.short) {
+      var inPlay = !!LIVE_IN_PLAY[live.short];
+      var finished = !!LIVE_FINISHED[live.short];
+      if (inPlay || finished) {
+        var score = (live.goalsHome!=null?live.goalsHome:'-')+'-'+(live.goalsAway!=null?live.goalsAway:'-');
+        var label = inPlay ? ('LIVE'+(live.elapsed!=null?' '+live.elapsed+'\'':'')) : (live.long || 'Final');
+        return '<span class="live-score-chip'+(inPlay?' live':'')+'">'+esc(label)+' '+esc(score)+'</span>';
+      }
+    }
+    var prev = PREVIOUS_SCORES[fxId];
+    if (prev && prev.goalsHome != null && prev.goalsAway != null) {
+      var prevScore = prev.goalsHome+'-'+prev.goalsAway;
+      return '<span class="live-score-chip" title="As of the last dashboard refresh, not live">FT '+esc(prevScore)+'</span>';
+    }
+    return '';
+  }
   function trackerCardHtml(e, identity){
 
       var mine = !!(identity && e.name === identity.name);
-      var head = '<div class="top"><div><div class="rec">'+esc(e.rec)+comboChipHtml(e)+'</div><div class="match">'+esc(e.matchLabel)+' · '+esc(e.league)+' · '+esc(fmtDay(e.date))+' · '+esc(e.name||'?')+'</div></div>'+
+      var head = '<div class="top"><div><div class="rec">'+esc(e.rec)+comboChipHtml(e)+'</div><div class="match">'+esc(e.matchLabel)+' · '+esc(e.league)+' · '+esc(fmtDay(e.date))+' · '+esc(e.name||'?')+'</div>'+liveScoreChipHtml(e)+'</div>'+
         (mine ? '<button class="remove-btn" data-remove="'+esc(e.trackId)+'">✕</button>' : '')+
       '</div>';
       if (!mine) {
@@ -2349,6 +2421,20 @@
   document.getElementById('tr-to').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
   document.getElementById('tr-group').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
   document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+  (function(){
+    var refreshBtn = document.getElementById('tr-refresh-scores');
+    if (!refreshBtn) return;
+    refreshBtn.addEventListener('click', function(){
+      if (refreshBtn.disabled) return;
+      refreshBtn.disabled = true;
+      var origText = refreshBtn.textContent;
+      refreshBtn.textContent = 'Refreshing…';
+      syncFromServer().then(function(){
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = origText;
+      });
+    });
+  })();
 
   // ---------- Performance tab ----------
   // Pure front end, same data already loaded for the Tracker tab above (loadTracked()) --
