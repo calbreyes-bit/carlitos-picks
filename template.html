@@ -153,6 +153,15 @@
   .last10-opp span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .last10-score{flex:none; font-variant-numeric:tabular-nums; font-weight:600; width:34px; text-align:center;}
   .last10-empty{font-size:11px; color:var(--dim);}
+  /* "Related Bets" card (Fixtures tab, per-fixture, historical picks on either team) */
+  .related-bets-list{display:flex; flex-direction:column; gap:2px;}
+  .relbet-item{padding:7px 0; border-bottom:1px solid var(--border); font-size:11.5px;}
+  .relbet-item:last-child{border-bottom:none;}
+  .relbet-rec{font-weight:600;}
+  .relbet-sub{color:var(--dim); font-size:10.5px; margin-top:2px;}
+  .relbet-meta{display:flex; align-items:center; gap:8px; margin-top:5px; font-size:11.5px; color:var(--dim);}
+  .relbet-meta .relbet-odds, .relbet-meta .relbet-stake{font-weight:600; color:var(--text);}
+  .related-bets-more{font-size:10.5px; color:var(--dim); text-align:center; margin-top:6px;}
   .combo-chip{
     display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase;
     color:var(--amber); background:var(--amber-bg); border-radius:20px; padding:1px 6px; margin-left:5px; vertical-align:middle;
@@ -1177,6 +1186,60 @@
     return '<div class="bb-line pass">'+(reason ? esc(reason) : 'No straight-bettable pick')+'</div>';
   }
 
+  // "Related Bets" card -- Carlos, 2026-09-17: "per game please list the related bets
+  // (tracked on the Tracker tab historical related to both teams). Add a card after
+  // the H2H." Surfaces every tracked entry (any tracker, any past matchday) whose
+  // matchLabel names either of THIS fixture's two teams -- e.g. viewing Celtic vs
+  // Ferencvarosi surfaces a past tracked BTTS pick from one of Celtic's earlier group
+  // matches. Read-only by design (editing a pick's status/odds/stake stays on the
+  // Tracker tab, which already handles that safely -- duplicating those controls here
+  // would double up the document-wide [data-status]/[data-odds]/[data-stake] listeners
+  // renderTracker() wires up after every render). This fixture's OWN tracked picks are
+  // excluded since they're already visible directly in the markets section above --
+  // this card is specifically about the teams' other games. Same team-attribution
+  // convention as teamBreakdownEntries() on the Performance tab: matchLabel is always
+  // "Home vs Away", parlay/freeform entries (no " vs ") aren't attributable to one game
+  // and are skipped.
+  function relatedBetsForFixture(fx){
+    var home = fx.home, away = fx.away;
+    return loadTracked().filter(function(e){
+      if (e.fxId === fx.id) return false;
+      if (!e.matchLabel || e.matchLabel.indexOf(' vs ') === -1) return false;
+      var parts = e.matchLabel.split(' vs ');
+      return parts[0] === home || parts[1] === home || parts[0] === away || parts[1] === away;
+    }).sort(function(a,b){ return (b.addedAt||0) - (a.addedAt||0); });
+  }
+  function relatedBetHtml(e){
+    return '<div class="relbet-item">'+
+        '<div class="relbet-rec">'+esc(e.rec)+comboChipHtml(e)+'</div>'+
+        '<div class="relbet-sub">'+esc(e.matchLabel)+' · '+esc(e.league)+' · '+esc(fmtDay(e.date))+' · '+esc(e.name||'?')+'</div>'+
+        '<div class="relbet-meta">'+
+          '<span class="relbet-odds">'+esc(e.odds!=null?fmtAmerican(e.odds):'–')+'</span>'+
+          '<span class="relbet-stake">'+esc(e.stake)+'u</span>'+
+          '<span class="status-chip '+esc(e.status)+'">'+esc(STATUS_LABELS[e.status]||e.status)+'</span>'+
+        '</div>'+
+      '</div>';
+  }
+  var RELATED_BETS_SHOW_MAX = 8;
+  function relatedBetsHtml(fx){
+    var related = relatedBetsForFixture(fx);
+    if (!related.length) {
+      return '<div class="moves-overview related-bets-box">'+
+          '<h4>Related Bets</h4>'+
+          '<div class="last10-empty">No tracked bets yet for '+esc(fx.home)+' or '+esc(fx.away)+'</div>'+
+        '</div>';
+    }
+    var shown = related.slice(0, RELATED_BETS_SHOW_MAX);
+    var more = related.length > RELATED_BETS_SHOW_MAX
+      ? '<div class="related-bets-more">+'+(related.length-RELATED_BETS_SHOW_MAX)+' more in Tracker tab</div>'
+      : '';
+    return '<div class="moves-overview related-bets-box">'+
+        '<h4>Related Bets ('+related.length+')</h4>'+
+        '<div class="related-bets-list">'+shown.map(relatedBetHtml).join('')+'</div>'+
+        more+
+      '</div>';
+  }
+
   function cardHtml(fx, opts){
     opts = opts || {};
     var dayLabel = fmtDay(fx.date) + ' · ' + fmtTime(fx.ts);
@@ -1192,6 +1255,7 @@
       '</div>'+
       '<div class="expand" id="expand-'+esc(fx.id)+'">'+
         snapshotHtml(fx)+
+        relatedBetsHtml(fx)+
         last10Html(fx)+
         movesOverviewHtml(fx)+
         marketsHtml(fx)+
