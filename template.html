@@ -351,6 +351,7 @@
   .parlay-controls .pl-league-note{font-size:11.5px; color:var(--dim); flex-basis:100%;}
   .parlay-controls .pl-league-note b{color:var(--text); font-weight:600;}
   .parlay-controls .pl-overlap-note{font-size:11.5px; color:var(--amber); flex-basis:100%;}
+  .parlay-controls .pl-skip-note{font-size:11.5px; color:var(--amber); flex-basis:100%;}
   .pcard{background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:14px; box-shadow:var(--shadow); overflow:hidden;}
   .pcard .phead{padding:12px 14px 10px 14px; border-bottom:1px solid var(--border);}
   .pcard .ptitle{display:flex; justify-content:space-between; align-items:center; gap:8px;}
@@ -562,6 +563,7 @@
       <button class="rebuild-btn" id="pl-new-parlay">+ New Parlay</button>
       <span class="pl-league-note" id="pl-league-note"></span>
       <span class="pl-overlap-note" id="pl-overlap-note"></span>
+      <span class="pl-skip-note" id="pl-skip-note"></span>
     </div>
     <div id="parlayList"></div>
   </section>
@@ -3048,10 +3050,33 @@
     return combo;
   }
 
+  function updateParlaySkipNote(names){
+    var el = document.getElementById('pl-skip-note');
+    if (!el) return;
+    el.innerHTML = (names && names.length)
+      ? ('\uD83D\uDD12 ' + names.join(' and ') + ' already tracked -- left as-is on rebuild (untrack it from the Tracker tab first if you want a fresh combination there).')
+      : '';
+  }
+  // Carlos, 2026-09-18: "if I already add a parlay to the track (Bankroll Builder), if I
+  // click on Refresh all 3, it removes the selections of my Bankroll Builder parlay" --
+  // once a slot's legs have been sent to the Tracker tab, that's a real logged bet, not a
+  // draft, and Rebuild all 3 (same function behind the #pl-minstars floor change and the
+  // first-load fallback in initParlays()) must never silently swap it out from under
+  // Carlos. A tracked slot keeps exactly the legs it has; its fxIds still count as "used"
+  // so the other two slots never grab the same game out of it. Untracked slots rebuild as
+  // before.
   function rebuildAllParlays(){
     var usedIds = [];
+    var skipped = [];
+    PARLAY_SLOTS.forEach(function(s){
+      if (isTracked(parlayTrackId(s.key)) && (parlayLegs[s.key]||[]).length) {
+        skipped.push(s.name);
+        usedIds = usedIds.concat((parlayLegs[s.key]||[]).map(function(l){ return l.legId; }));
+      }
+    });
     PARLAY_BUILD_ORDER.forEach(function(slotKey){
       var s = PARLAY_SLOTS.filter(function(x){ return x.key===slotKey; })[0];
+      if (isTracked(parlayTrackId(s.key)) && (parlayLegs[s.key]||[]).length) return; // already tracked -- leave it alone
       var legs = slotKey === 'bankroll'
         ? buildParlayGreedySafest(parlayPool, s.targetOdds, s.minLegs, usedIds)
         : buildParlayFromPool(parlayPool, s.targetOdds, s.minLegs, usedIds);
@@ -3060,6 +3085,7 @@
     });
     saveParlayState();
     renderParlays();
+    updateParlaySkipNote(skipped);
   }
 
   function saveParlayState(){
