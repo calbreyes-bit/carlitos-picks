@@ -293,7 +293,8 @@
   .tcard .top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
   .tcard .rec{font-size:13px; font-weight:600;}
   .tcard .match{font-size:11.5px; color:var(--dim); margin-top:2px;}
-  .tcard .row2{display:flex; align-items:center; gap:8px; margin-top:9px;}
+  .tcard .row2{display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap;}
+  .tcard .status-group{display:flex; gap:6px; width:100%;}
   .tcard input[type=number]{width:56px; padding:5px 6px; border-radius:7px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:12.5px;}
   .status-btn{flex:1; padding:6px; border-radius:7px; border:1px solid var(--border); background:var(--chip-bg); color:var(--text); font-size:11.5px; font-weight:600; cursor:pointer;}
   .status-btn.won{background:var(--green-bg); color:var(--green); border-color:var(--green);}
@@ -2361,11 +2362,13 @@
         '<div class="row2">'+
           'Odds <input type="number" step="1" value="'+esc(e.odds!=null?e.odds:'')+'" data-odds="'+esc(e.trackId)+'" title="Type the odds you actually got at your sportsbook">'+
           'Stake <input type="number" min="0" step="0.25" value="'+esc(e.stake)+'" data-stake="'+esc(e.trackId)+'">'+
+          '<div class="status-group">'+
           '<button class="status-btn'+(e.status==='won'?' won':'')+'" data-status="won" data-id="'+esc(e.trackId)+'">Won</button>'+
           '<button class="status-btn'+(e.status==='half_won'?' won':'')+'" data-status="half_won" data-id="'+esc(e.trackId)+'">½ Won</button>'+
           '<button class="status-btn'+(e.status==='push'?' push':'')+'" data-status="push" data-id="'+esc(e.trackId)+'">Push</button>'+
           '<button class="status-btn'+(e.status==='half_lost'?' lost':'')+'" data-status="half_lost" data-id="'+esc(e.trackId)+'">½ Lost</button>'+
           '<button class="status-btn'+(e.status==='lost'?' lost':'')+'" data-status="lost" data-id="'+esc(e.trackId)+'">Lost</button>'+
+          '</div>'+
         '</div>'+
       '</div>';
   }
