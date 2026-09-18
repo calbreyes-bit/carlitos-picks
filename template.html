@@ -385,9 +385,12 @@
   .leg-picker-panel .lp-item{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid var(--border); font-size:12px;}
   .leg-picker-panel .lp-item:last-child{border-bottom:none;}
   .leg-picker-panel .lp-add{flex:none; border:1px solid var(--accent); color:var(--accent); background:none; border-radius:20px; font-size:11px; padding:3px 10px; cursor:pointer;}
-  .new-parlay-panel .np-field{display:block; font-size:12px; color:var(--dim); margin-bottom:12px;}
-  .new-parlay-panel .np-field input{display:block; width:100%; margin-top:6px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13.5px; box-sizing:border-box;}
-  .new-parlay-panel .np-create{display:block; width:100%; padding:10px; border:none; border-radius:8px; background:var(--accent); color:#fff; font-size:13px; font-weight:700; cursor:pointer; margin-top:2px;}
+  .np-field{display:block; font-size:12px; color:var(--dim); margin-bottom:12px;}
+  .np-field input, .np-field select{display:block; width:100%; margin-top:6px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13.5px; box-sizing:border-box;}
+  .np-create{display:block; width:100%; padding:10px; border:none; border-radius:8px; background:var(--accent); color:#fff; font-size:13px; font-weight:700; cursor:pointer; margin-top:2px;}
+  .lp-custom{margin-top:10px; border-top:1px solid var(--border); padding-top:10px;}
+  .lp-custom-toggle{width:100%; padding:8px; border:1px dashed var(--border); border-radius:8px; background:none; color:var(--accent); font-size:12px; font-weight:600; cursor:pointer;}
+  .lp-custom-form{margin-top:10px;}
   .premove-btn{background:none; border:none; color:var(--dim); font-size:11px; cursor:pointer; padding:2px 4px;}
   .premove-btn:hover{color:var(--text);}
 
@@ -585,6 +588,15 @@
 <div class="dropdown-panel leg-picker-panel" id="leg-picker-panel">
   <input type="search" class="search" id="lp-search" placeholder="Search picks…">
   <div id="lp-options"></div>
+  <div class="lp-custom">
+    <button type="button" class="lp-custom-toggle" id="lp-custom-toggle">+ Add a custom leg</button>
+    <div class="lp-custom-form" id="lp-custom-form" hidden>
+      <label class="np-field">Fixture<select id="lp-custom-fx"></select></label>
+      <label class="np-field">Pick / market (e.g. "Corners Over 9.5")<input type="text" id="lp-custom-label" maxlength="60" placeholder="What are you betting?"></label>
+      <label class="np-field">Odds (American, e.g. 150 or -120)<input type="number" step="1" id="lp-custom-odds" placeholder="-120"></label>
+      <button type="button" class="np-create" id="lp-custom-add-btn">Add custom leg</button>
+    </div>
+  </div>
   <button class="backdrop-close" data-close>Close</button>
 </div>
 <div class="dropdown-panel new-parlay-panel" id="new-parlay-panel">
@@ -2809,7 +2821,8 @@
   var PARLAY_CANDIDATE_CAP = 14;
   var MK_SHORT = {best_bet:'Best Bet', match_total:'Total', btts:'BTTS', team_total:'Team Total', ml:'ML', dc:'DC', ah:'AH'};
 
-  var parlayPool = [];
+  var parlayPool = [];      // auto-build candidates, filtered by the #pl-minstars floor
+  var parlayFullPool = [];  // every priced KEEP leg, no star floor -- manual Add/Swap picker only
   var parlayLegs = {longshot: [], realistic: [], bankroll: []};
   var legPickerTarget = null; // {slotKey, replaceLegId}
   // Carlos, 2026-09-17: "now that I have the parlay legs visible, I want to be able to
@@ -2822,6 +2835,23 @@
   // PARLAY_STATE_KEY so a custom parlay is never wiped by the fixed-3 rebuild-on-minStars-
   // change logic in initParlays().
   var customParlaySlots = [];
+  // Carlos, 2026-09-18: "the dropdown should allow for any option to be added and maybe
+  // even add a custom leg on a fixture" -- a fully manual leg (any market/description,
+  // any odds) attached to a real fixture from today's board so it still has a date for
+  // grading. Not derived from FIXTURES/buildParlayPool at all, so it needs its own
+  // resolve-by-id store (customLegsById) persisted separately -- see resolveLegById and
+  // the lp-custom-add-btn handler below.
+  var CUSTOM_LEGS_KEY = 'matchDayCustomLegs_v1';
+  var customLegsById = {};
+  function loadCustomLegs(){
+    try {
+      var raw = localStorage.getItem(CUSTOM_LEGS_KEY);
+      customLegsById = raw ? JSON.parse(raw) : {};
+    } catch(e){ customLegsById = {}; }
+  }
+  function saveCustomLegs(){
+    try { localStorage.setItem(CUSTOM_LEGS_KEY, JSON.stringify(customLegsById)); } catch(e){}
+  }
   function allParlaySlots(){ return PARLAY_SLOTS.concat(customParlaySlots); }
 
   function americanToDecimal(o){
@@ -2841,10 +2871,10 @@
   // Every KEEP pick across all six markets that clears minStars, priced the exact same
   // way its own market row already prices it (live API odds first, else the model's
   // embedded threshold price) -- see marketRowHtml() above for the identical precedence.
-  function buildParlayPool(minStars){
+  function collectAllLegCandidates(){
     var pool = [];
     function consider(fx, marketKey, side, pick){
-      if (!pick || pick.stars == null || pick.stars < minStars) return;
+      if (!pick || pick.stars == null) return;
       var o = legOddsFor(fx, marketKey, side, pick);
       if (o.odds == null || isNaN(o.odds)) return; // can't price it -- skip rather than guess
       var team = side === 'home' ? fx.home : (side === 'away' ? fx.away : '');
@@ -2884,6 +2914,16 @@
       });
     });
     pool.sort(function(a,b){ return b.stars - a.stars || (b.odds - a.odds); });
+    return pool;
+  }
+
+  // Auto-build candidates only -- filtered to Carlos's confidence floor (#pl-minstars).
+  // Carlos, 2026-09-18: "the [+Add a leg] dropdown should allow for any option to be
+  // added" -- the manual picker no longer goes through this floor at all, see
+  // parlayFullPool (collectAllLegCandidates(), no star filter) used by
+  // renderLegPickerOptions/resolveLegById below instead.
+  function buildParlayPool(minStars){
+    var pool = collectAllLegCandidates().filter(function(l){ return l.stars >= minStars; });
     updateParlayLeagueNote();
     return pool;
   }
@@ -2906,7 +2946,8 @@
 
   function resolveLegById(legId){
     var i;
-    for (i=0;i<parlayPool.length;i++){ if (parlayPool[i].legId === legId) return parlayPool[i]; }
+    for (i=0;i<parlayFullPool.length;i++){ if (parlayFullPool[i].legId === legId) return parlayFullPool[i]; }
+    if (customLegsById[legId]) return customLegsById[legId];
     return null;
   }
   function parlayCombinedDecimal(legs){
@@ -3105,7 +3146,7 @@
         '<div class="pleg-body">'+
           '<div class="pleg-match">'+esc(l.matchLabel)+' · '+esc(l.league)+'</div>'+
           '<div class="pleg-rec">'+esc(l.label)+': '+esc(l.rec)+'</div>'+
-          '<div class="pleg-meta"><span class="stars">'+esc(stars(l.stars))+'</span><span class="pleg-odds">'+fmtAmerican(l.odds)+'</span>'+(l.oddsSource==='model'?'<span class="model-price-chip" title="No live sportsbook market for this bet -- this is the model\'s own breakeven price, not a real quote">model price</span>':'')+overlapChip+'</div>'+
+          '<div class="pleg-meta"><span class="stars">'+esc(stars(l.stars))+'</span><span class="pleg-odds">'+fmtAmerican(l.odds)+'</span>'+(l.oddsSource==='model'?'<span class="model-price-chip" title="No live sportsbook market for this bet -- this is the model\'s own breakeven price, not a real quote">model price</span>':(l.custom?'<span class="model-price-chip" title="Manually added by you -- not one of the model\'s own picks">custom</span>':''))+overlapChip+'</div>'+
         '</div>'+
         '<div class="pleg-actions">'+
           '<button class="pleg-swap" data-swap="'+esc(slot.key)+'" data-legid="'+esc(l.legId)+'">Swap</button>'+
@@ -3145,10 +3186,34 @@
     updateParlayOverlapNote();
   }
 
+  function usedFxIdsInCurrentSlot(){
+    if (!legPickerTarget) return [];
+    return (parlayLegs[legPickerTarget.slotKey]||[])
+      .filter(function(l){ return l.legId !== legPickerTarget.replaceLegId; })
+      .map(function(l){ return l.fxId; });
+  }
+  function populateCustomLegFixtureSelect(){
+    var sel = document.getElementById('lp-custom-fx');
+    var usedFxIds = usedFxIdsInCurrentSlot();
+    var dayFilter = document.getElementById('f-day').value;
+    var opts = FIXTURES.filter(function(fx){
+      if (usedFxIds.indexOf(fx.id) !== -1) return false; // same same-fixture-per-parlay rule as the picked list
+      if (leagueSelected.size && !leagueSelected.has(fx.league)) return false;
+      if (dayFilter && fx.date !== dayFilter) return false;
+      return true;
+    }).sort(function(a,b){ return (a.ts||0) - (b.ts||0); });
+    sel.innerHTML = opts.length ? opts.map(function(fx){
+      return '<option value="'+esc(fx.id)+'">'+esc(fx.home+' vs '+fx.away)+' — '+esc(fmtDay(fx.date))+'</option>';
+    }).join('') : '<option value="">No eligible fixtures right now</option>';
+  }
   function openLegPicker(slotKey, replaceLegId){
     legPickerTarget = {slotKey: slotKey, replaceLegId: replaceLegId || null};
     document.getElementById('lp-search').value = '';
     renderLegPickerOptions('');
+    document.getElementById('lp-custom-form').hidden = true;
+    document.getElementById('lp-custom-label').value = '';
+    document.getElementById('lp-custom-odds').value = '';
+    populateCustomLegFixtureSelect();
     openPanel(document.getElementById('leg-picker-panel'));
   }
   function renderLegPickerOptions(filterText){
@@ -3171,10 +3236,8 @@
         (usedElsewhereMap[l.legId] = usedElsewhereMap[l.legId] || []).push(s.name);
       });
     });
-    var usedFxIdsInSlot = (parlayLegs[legPickerTarget.slotKey]||[])
-      .filter(function(l){ return l.legId !== legPickerTarget.replaceLegId; })
-      .map(function(l){ return l.fxId; });
-    var opts = parlayPool.filter(function(l){
+    var usedFxIdsInSlot = usedFxIdsInCurrentSlot();
+    var opts = parlayFullPool.filter(function(l){
       if (usedFxIdsInSlot.indexOf(l.fxId) !== -1) return false; // no two legs from the same fixture in one parlay
       if (ft && (l.matchLabel+' '+l.label+' '+l.rec).toLowerCase().indexOf(ft) === -1) return false;
       return true;
@@ -3251,21 +3314,43 @@
   }
 
   function initParlays(){
+    loadCustomLegs();
     var minStars = parseFloat(document.getElementById('pl-minstars').value);
+    parlayFullPool = collectAllLegCandidates();
     parlayPool = buildParlayPool(minStars);
     loadCustomParlays();
     var saved = loadParlayState();
     if (saved && parseFloat(saved.minStars) === minStars) {
-      var allValid = true;
       var seenIds = [];
+      var anyEmpty = false;
       PARLAY_SLOTS.forEach(function(s){
         var legs = (saved.slots[s.key]||[]).map(resolveLegById).filter(Boolean);
         legs = legs.filter(function(l){ return seenIds.indexOf(l.legId) === -1; }); // guard against a stale save leaking a shared leg
         parlayLegs[s.key] = legs;
         seenIds = seenIds.concat(legs.map(function(l){ return l.legId; }));
-        if (legs.length < s.minLegs) allValid = false;
+        if (!legs.length) anyEmpty = true;
       });
-      if (!allValid) { rebuildAllParlays(); return; }
+      // Carlos, 2026-09-18: a manually-built slot (a below-floor leg, or a custom leg)
+      // often sits below minLegs on purpose while he's still building it up -- that used
+      // to trigger a full rebuildAllParlays() on the very next reload, silently discarding
+      // every manual edit in ALL THREE slots just because ONE of them hadn't hit minLegs
+      // yet. Now a slot keeps exactly what was saved regardless of leg count; only a slot
+      // that came back genuinely empty (nothing saved, or every saved leg failed to
+      // resolve -- e.g. a fixture that rotated off today's board) gets auto-filled, and
+      // only that slot, not the other two.
+      if (anyEmpty) {
+        var usedIds = seenIds.slice();
+        PARLAY_BUILD_ORDER.forEach(function(slotKey){
+          var s = PARLAY_SLOTS.filter(function(x){ return x.key===slotKey; })[0];
+          if ((parlayLegs[s.key]||[]).length) return; // already has saved legs -- keep them, don't touch
+          var legs = slotKey === 'bankroll'
+            ? buildParlayGreedySafest(parlayPool, s.targetOdds, s.minLegs, usedIds)
+            : buildParlayFromPool(parlayPool, s.targetOdds, s.minLegs, usedIds);
+          parlayLegs[s.key] = legs;
+          usedIds = usedIds.concat(legs.map(function(l){ return l.legId; }));
+        });
+        saveParlayState();
+      }
       renderParlays();
     } else {
       rebuildAllParlays();
@@ -3273,6 +3358,7 @@
   }
 
   document.getElementById('pl-minstars').addEventListener('change', function(){
+    parlayFullPool = collectAllLegCandidates();
     parlayPool = buildParlayPool(parseFloat(this.value));
     rebuildAllParlays();
   });
@@ -3280,6 +3366,7 @@
     // Re-pull the pool first, not just re-run the slot-building step on the old pool --
     // otherwise a league Carlos unchecked on the Fixtures tab after this page loaded
     // would keep showing up in "Rebuild all 3" results until a full page reload.
+    parlayFullPool = collectAllLegCandidates();
     parlayPool = buildParlayPool(parseFloat(document.getElementById('pl-minstars').value));
     rebuildAllParlays();
   });
@@ -3329,6 +3416,41 @@
     }
   });
   document.getElementById('lp-search').addEventListener('input', function(e){ renderLegPickerOptions(e.target.value); });
+  document.getElementById('lp-custom-toggle').addEventListener('click', function(){
+    var form = document.getElementById('lp-custom-form');
+    form.hidden = !form.hidden;
+    if (!form.hidden) document.getElementById('lp-custom-label').focus();
+  });
+  document.getElementById('lp-custom-add-btn').addEventListener('click', function(){
+    if (!legPickerTarget) return;
+    var fxId = document.getElementById('lp-custom-fx').value;
+    var fx = FIXTURES.filter(function(f){ return String(f.id) === String(fxId); })[0];
+    if (!fx) { alert('Pick a fixture first.'); return; }
+    var label = document.getElementById('lp-custom-label').value.trim();
+    if (!label) { alert('Describe the pick, e.g. "Corners Over 9.5".'); return; }
+    var oddsRaw = document.getElementById('lp-custom-odds').value.trim();
+    var odds = parseFloat(oddsRaw);
+    if (!oddsRaw || isNaN(odds) || Math.abs(odds) < 100) { alert('Enter American odds, e.g. 150 or -120.'); return; }
+    var legId = 'custom::' + fx.id + '::' + Date.now() + '::' + Math.floor(Math.random()*1e6);
+    var leg = {
+      legId: legId, fxId: fx.id, marketKey: 'custom', side: '',
+      label: 'Custom', matchLabel: fx.home + ' vs ' + fx.away, league: fx.league, date: fx.date, ts: fx.ts,
+      rec: label, stars: null, odds: odds, oddsSource: 'custom', custom: true
+    };
+    customLegsById[legId] = leg;
+    saveCustomLegs();
+    var slotKey = legPickerTarget.slotKey, replaceLegId = legPickerTarget.replaceLegId;
+    var arr = parlayLegs[slotKey] || (parlayLegs[slotKey] = []);
+    if (replaceLegId) {
+      var idx = arr.findIndex(function(l){ return l.legId===replaceLegId; });
+      if (idx !== -1) arr[idx] = leg; else arr.push(leg);
+    } else {
+      arr.push(leg);
+    }
+    persistParlays();
+    renderParlays();
+    closeAllPanels();
+  });
 
   // ---------- init ----------
   var gen = DATA.generatedAt ? new Date(DATA.generatedAt) : null;
