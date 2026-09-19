@@ -2454,8 +2454,21 @@
         key = e.date || 'unknown'; label = e.date ? fmtDay(e.date) : 'No date';
       } else if (mode === 'kickoff') {
         var ts = entryKickoffTs(e), mins = ts ? timeOfDayMinutes(ts) : null;
-        if (mins == null) { key = 'unknown'; label = 'Kickoff time unavailable'; }
-        else { key = ('0'+Math.floor(mins/60)).slice(-2)+':'+('0'+(mins%60)).slice(-2); label = fmtTime(ts); }
+        if (mins != null) {
+          key = ('0'+Math.floor(mins/60)).slice(-2)+':'+('0'+(mins%60)).slice(-2); label = fmtTime(ts);
+        } else if (e.date) {
+          // No exact kickoff clock time on record for this pick -- its fixture has aged
+          // out of the current pipeline window, so entryKickoffTs() (see above) can't
+          // look it up anymore. Carlos, 2026-09-19: "the passed games are grouped under
+          // Kickoff Time Unavailable" -- that's nearly every older/graded pick, since
+          // FIXTURES only holds the current rolling window. Group those by day instead
+          // of dumping them all into one flat bucket, so past picks still land somewhere
+          // useful; only picks with no fixture AND no stored date at all fall through to
+          // the true "unavailable" bucket below.
+          key = 'day:'+e.date; label = fmtDay(e.date) + ' (exact time unavailable)';
+        } else {
+          key = 'unknown'; label = 'Kickoff time unavailable';
+        }
       } else if (mode === 'stars') {
         key = (e.stars==null) ? 'none' : e.stars.toFixed(1);
         label = (e.stars==null) ? 'No rating' : stars(e.stars);
@@ -2477,7 +2490,11 @@
       sortedOrder = order.slice().sort(function(a,b){
         if (a === 'unknown') return 1;
         if (b === 'unknown') return -1;
-        return a.localeCompare(b); // chronological by time-of-day, earliest first
+        var aDay = a.indexOf('day:') === 0, bDay = b.indexOf('day:') === 0;
+        if (aDay && !bDay) return 1;  // real time-of-day buckets before day-only fallback buckets
+        if (!aDay && bDay) return -1;
+        if (aDay && bDay) return b.localeCompare(a); // day buckets: most recent date first
+        return a.localeCompare(b); // time-of-day buckets: chronological, earliest first
       });
     } else if (mode === 'stars') {
       sortedOrder = order.slice().sort(function(a,b){
