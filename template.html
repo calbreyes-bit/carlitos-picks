@@ -420,6 +420,38 @@
   }
   .mcfc-crest{display:none; height:20px; width:20px; vertical-align:-5px; margin-right:5px; border-radius:50%;}
   :root[data-theme="dark"] .mcfc-crest{display:inline-block;}
+
+  /* 2026-09-19, Carlos: on phone widths the dark HUD theme's 1px cyan borders,
+     repeated across many small/packed elements (Tracker status buttons + odds/
+     stake inputs; Fixtures market-row dividers, odds inputs, H2H chips, Last 10
+     rows), stack into a "caged" look that doesn't happen on desktop where there's
+     more surrounding space. Desktop is untouched (this is all inside a
+     max-width:479px query). Two treatments:
+     - Elements with their own background fill distinct from their parent's
+       (status buttons, number inputs, h2h chips) drop the border entirely --
+       the background-color contrast alone still reads as a separate control.
+       A *selected* status button (Won/Lost/etc) keeps its full colored border,
+       since that's the one thing that needs to pop.
+     - Plain line dividers with no fill of their own (market-row, last10-item,
+       relbet-item bottom borders) can't go fully transparent without losing
+       the separation between stacked rows entirely, so these are just dimmed
+       instead of removed.
+     Structural/actionable borders (the fixture .card itself, .bb-line, the
+     Track button, .tcard) are intentionally left alone -- those are what give
+     each card its shape and its call-to-action, not decoration. */
+  @media (max-width:479px){
+    .tcard .status-btn:not(.won):not(.lost):not(.push){ border-color:transparent; }
+    .tcard input[type=number]{ border-color:transparent; }
+    .market-odds-input, .h2h-chip{ border-color:transparent; }
+    .market-row, .last10-item, .relbet-item{ border-bottom-color:rgba(0,0,0,.08); }
+  }
+  @media (max-width:479px) and (prefers-color-scheme:dark){
+    .market-row, .last10-item, .relbet-item{ border-bottom-color:rgba(43,227,255,.22); }
+  }
+  @media (max-width:479px){
+    :root[data-theme="light"] .market-row, :root[data-theme="light"] .last10-item, :root[data-theme="light"] .relbet-item{ border-bottom-color:rgba(0,0,0,.08); }
+    :root[data-theme="dark"] .market-row, :root[data-theme="dark"] .last10-item, :root[data-theme="dark"] .relbet-item{ border-bottom-color:rgba(43,227,255,.22); }
+  }
 </style>
 </head>
 <body>
