@@ -2052,7 +2052,7 @@
   function serverRowToEntry(row){
     return {
       trackId: row.track_id, name: row.name, fxId: row.fx_id, marketKey: row.market_key, side: row.side || '',
-      matchLabel: row.match_label, league: row.league, date: row.date, rec: row.rec,
+      matchLabel: row.match_label, league: row.league, date: row.date, ts: row.ts || null, rec: row.rec,
       stars: (row.stars===''||row.stars==null) ? null : parseFloat(row.stars),
       odds: (row.odds===''||row.odds==null) ? null : parseFloat(row.odds),
       stake: (row.stake===''||row.stake==null) ? 0 : parseFloat(row.stake),
@@ -2063,7 +2063,7 @@
   function entryToServerPick(entry){
     return {
       track_id: entry.trackId, name: entry.name, fx_id: entry.fxId, market_key: entry.marketKey, side: entry.side||'',
-      match_label: entry.matchLabel, league: entry.league, date: entry.date, rec: entry.rec,
+      match_label: entry.matchLabel, league: entry.league, date: entry.date, ts: entry.ts || '', rec: entry.rec,
       stars: entry.stars, odds: entry.odds, stake: entry.stake, status: entry.status,
       added_at: entry.addedAt, updated_at: Date.now()
     };
@@ -2150,7 +2150,7 @@
       var defaultStake = stakeForWin1(trackOdds);
       var entry = {
         trackId: scopedId, name: identity.name, fxId: fxId, marketKey: marketKey, side: side,
-        matchLabel: fx.home + ' vs ' + fx.away, league: fx.league, date: fx.date,
+        matchLabel: fx.home + ' vs ' + fx.away, league: fx.league, date: fx.date, ts: fx.ts,
         rec: pick.rec, stars: pick.stars, odds: trackOdds, stake: defaultStake, status: 'pending', addedAt: Date.now()
       };
       arr.push(entry);
@@ -2198,7 +2198,7 @@
     var scopedId = identity.name + '::' + baseTrackId;
     var entry = {
       trackId: scopedId, name: identity.name, fxId: fxId, marketKey: 'custom', side: '',
-      matchLabel: fx.home + ' vs ' + fx.away, league: fx.league, date: fx.date,
+      matchLabel: fx.home + ' vs ' + fx.away, league: fx.league, date: fx.date, ts: fx.ts,
       rec: desc, stars: null, odds: odds, stake: stakeForWin1(odds), status: 'pending', addedAt: Date.now()
     };
     var arr = loadTracked();
@@ -2420,6 +2420,13 @@
   // the exact kickoff clock time is gone. Sorted descending (latest/soonest kickoff on
   // top), matching the "newest first" feel of the addedAt-desc sort this replaces.
   function entryKickoffTs(e){
+    // Carlos, 2026-09-19: persisted ts (saved directly on the pick at track time --
+    // see entryToServerPick/serverRowToEntry and TrackerSync.gs's PICK_COLUMNS) comes
+    // first, since it survives forever. Falls back to findFixture() for older picks
+    // saved before ts persistence existed -- works only while the fixture is still in
+    // the current pipeline window (today/tomorrow). entryKickoffSortKey() below has its
+    // own further fallback (stored date at noon) once both of these come up empty.
+    if (e.ts) return e.ts;
     var fx = findFixture(e.fxId);
     return (fx && fx.ts) ? fx.ts : null;
   }
