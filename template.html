@@ -154,6 +154,26 @@
   .last10-opp span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .last10-score{flex:none; font-variant-numeric:tabular-nums; font-weight:600; width:34px; text-align:center;}
   .last10-empty{font-size:11px; color:var(--dim);}
+
+  /* "Streaks" box (Fixtures tab, after H2H) -- one mixed-team list, crest + label + value
+     per row, same as the last10/related-bets card shells. Carlos, 2026-09-19: "based on
+     the last 10 games, could we add a streaks section for each team?", then "also the
+     times a team has gone over the team total in the last 10 games", then sent a
+     reference screenshot of a similar widget, then "I am interested in the ones that
+     support the recommendations" -- rows tied to a market with a real (non-PASS) rec on
+     THIS fixture get a "PICK" tag + accent highlight and sort first, same "look at every
+     market" idea bestBetSummaryLine/altParlayLegPick already use elsewhere on this card. */
+  .streak-list{display:flex; flex-direction:column;}
+  .streak-row{display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px;}
+  .streak-row:last-child{border-bottom:none;}
+  .streak-row.relevant{background:var(--accent-dim); margin:0 -10px; padding:5px 10px; border-radius:6px;}
+  .streak-row.relevant + .streak-row.relevant{margin-top:2px;}
+  .streak-label{flex:1 1 0; min-width:0; display:flex; align-items:center; gap:6px; overflow:hidden;}
+  .streak-label span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .streak-tag{flex:none; font-size:9px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:var(--accent); background:var(--card); border-radius:8px; padding:1px 6px;}
+  .streak-value{flex:none; font-variant-numeric:tabular-nums; font-weight:700; color:var(--text); font-size:12.5px;}
+  .streak-value.good{color:var(--green);}
+  .streak-value.bad{color:var(--red);}
   /* "Related Bets" card (Fixtures tab, per-fixture, historical picks on either team) */
   .related-bets-list{display:flex; flex-direction:column; gap:2px;}
   .relbet-item{padding:7px 0; border-bottom:1px solid var(--border); font-size:11.5px;}
@@ -443,14 +463,14 @@
     .tcard .status-btn:not(.won):not(.lost):not(.push){ border-color:transparent; }
     .tcard input[type=number]{ border-color:transparent; }
     .market-odds-input, .h2h-chip{ border-color:transparent; }
-    .market-row, .last10-item, .relbet-item{ border-bottom-color:rgba(0,0,0,.08); }
+    .market-row, .last10-item, .relbet-item, .streak-row{ border-bottom-color:rgba(0,0,0,.08); }
   }
   @media (max-width:479px) and (prefers-color-scheme:dark){
-    .market-row, .last10-item, .relbet-item{ border-bottom-color:rgba(43,227,255,.22); }
+    .market-row, .last10-item, .relbet-item, .streak-row{ border-bottom-color:rgba(43,227,255,.22); }
   }
   @media (max-width:479px){
-    :root[data-theme="light"] .market-row, :root[data-theme="light"] .last10-item, :root[data-theme="light"] .relbet-item{ border-bottom-color:rgba(0,0,0,.08); }
-    :root[data-theme="dark"] .market-row, :root[data-theme="dark"] .last10-item, :root[data-theme="dark"] .relbet-item{ border-bottom-color:rgba(43,227,255,.22); }
+    :root[data-theme="light"] .market-row, :root[data-theme="light"] .last10-item, :root[data-theme="light"] .relbet-item, :root[data-theme="light"] .streak-row{ border-bottom-color:rgba(0,0,0,.08); }
+    :root[data-theme="dark"] .market-row, :root[data-theme="dark"] .last10-item, :root[data-theme="dark"] .relbet-item, :root[data-theme="dark"] .streak-row{ border-bottom-color:rgba(43,227,255,.22); }
   }
 </style>
 </head>
@@ -1199,6 +1219,140 @@
       '</div>';
   }
 
+  // ---- "Streaks" section -- see the CSS comment above .streak-list for the request
+  // history. Computed purely from fx.snapshot.<side>.last10 (already fetched for the
+  // Last 10 cards above) plus this fixture's own current lines (fx.prices) for the
+  // rate-style stats, so no backend/pipeline change is needed.
+  // Returns {num, text} so comparisons use the parsed float but labels keep the line's
+  // own original text (parseFloat('2.0') stringifies back to '2', which would show
+  // "Match Over 2" instead of the book's actual "Match Over 2.0" line).
+  function parseLineNum(s){
+    if (!s) return null;
+    var m = /(-?\d+(\.\d+)?)/.exec(String(s));
+    return m ? {num: parseFloat(m[1]), text: m[1]} : null;
+  }
+  function isRealRec(pick){
+    return !!(pick && pick.rec && String(pick.rec).trim().toUpperCase() !== 'PASS');
+  }
+  // Longest CURRENT run at the front of a most-recent-first array where pred holds --
+  // stops at the first game that breaks it (0 if even the most recent game breaks it).
+  function currentRun(items, pred){
+    var n = 0;
+    for (var i = 0; i < items.length; i++){
+      if (!pred(items[i])) break;
+      n++;
+    }
+    return n;
+  }
+  function rateStat(items, pred){
+    if (!items.length) return null;
+    var hits = 0;
+    items.forEach(function(it){ if (pred(it)) hits++; });
+    return {hits: hits, total: items.length};
+  }
+
+  function teamStreakEntries(fx, side){
+    var teamName = side === 'home' ? fx.home : fx.away;
+    var teamLogo = side === 'home' ? fx.homeLogo : fx.awayLogo;
+    var snap = (fx.snapshot || {})[side] || {};
+    var items = snap.last10 || [];
+    if (items.length < 3) return []; // too little history for a meaningful read
+
+    var out = [];
+    function push(label, value, opts){
+      opts = opts || {};
+      out.push({team: opts.team||teamName, logo: opts.logo||teamLogo, label: label, value: value, tone: opts.tone||'', relevant: !!opts.relevant, weight: opts.weight||0});
+    }
+
+    // -- current form streak: show the single most notable one, not all four --
+    var lossStreak = currentRun(items, function(it){ return it.result === 'L'; });
+    var winStreak = currentRun(items, function(it){ return it.result === 'W'; });
+    var unbeatenStreak = currentRun(items, function(it){ return it.result !== 'L'; });
+    var winlessStreak = currentRun(items, function(it){ return it.result !== 'W'; });
+    var formRelevant = isRealRec((fx.ml||{})[side]) || isRealRec((fx.dc||{})[side]) || isRealRec((fx.ah||{})[side]);
+    if (lossStreak >= 2) push('Losses', String(lossStreak), {tone:'bad', relevant:formRelevant, weight:lossStreak});
+    else if (winStreak >= 2) push('Win streak', String(winStreak), {tone:'good', relevant:formRelevant, weight:winStreak});
+    else if (unbeatenStreak >= 3) push('Unbeaten', String(unbeatenStreak), {tone:'good', relevant:formRelevant, weight:unbeatenStreak});
+    else if (winlessStreak >= 3) push('Winless', String(winlessStreak), {tone:'bad', relevant:formRelevant, weight:winlessStreak});
+
+    // -- clean sheet / conceding streak: single most notable one --
+    var noCleanSheet = currentRun(items, function(it){ return it.scoreAgainst > 0; });
+    var cleanSheetStreak = currentRun(items, function(it){ return it.scoreAgainst === 0; });
+    if (noCleanSheet >= 3) push('No clean sheet', String(noCleanSheet), {tone:'bad', weight:noCleanSheet*0.8});
+    else if (cleanSheetStreak >= 2) push('Clean sheet streak', String(cleanSheetStreak), {tone:'good', weight:cleanSheetStreak*0.8});
+
+    // -- scoring streak: single most notable one --
+    var scoredStreak = currentRun(items, function(it){ return it.scoreFor > 0; });
+    var blankedStreak = currentRun(items, function(it){ return it.scoreFor === 0; });
+    if (scoredStreak >= 3) push('Scored', scoredStreak+' straight', {tone:'good', weight:scoredStreak*0.7});
+    else if (blankedStreak >= 2) push('No goals', blankedStreak+' straight', {tone:'bad', weight:blankedStreak*0.7});
+
+    // -- BTTS rate -- relevant when this fixture actually has a live BTTS rec
+    var btts = rateStat(items, function(it){ return it.scoreFor > 0 && it.scoreAgainst > 0; });
+    if (btts) push('BTTS', btts.hits+'/'+btts.total, {relevant:isRealRec(fx.btts), weight:3});
+
+    // -- Match total rate, using THIS fixture's actual total line -- relevant when Match
+    // Total (or Best Bet, which is often the same pick) has a real rec.
+    var totalLine = parseLineNum(fx.prices && fx.prices.total_line);
+    if (totalLine != null) {
+      var over = rateStat(items, function(it){ return (it.scoreFor + it.scoreAgainst) > totalLine.num; });
+      if (over) push('Match Over '+totalLine.text, over.hits+'/'+over.total, {relevant:isRealRec(fx.match_total) || isRealRec(fx.best_bet), weight:4});
+    }
+
+    // -- Team total rate, using THIS fixture's actual team-total line for this side --
+    // relevant when this side's Team Total market has a real rec (Carlos, 2026-09-19:
+    // "also the times a team has gone over the team total in the last 10 games"). Paired
+    // with how often TONIGHT'S OPPONENT has conceded at that same line in their own last
+    // 10 (Carlos, 2026-09-19: "if the team total is 1.5, we need the number of times the
+    // team scored 2 or more and maybe the number of times the opponent conceded 2 or
+    // more") -- two data points for the same pick: this team's attack rate and the
+    // opponent's own defensive leakiness at that threshold.
+    var ttLineStr = side === 'home' ? (fx.prices && fx.prices.tt_home_line) : (fx.prices && fx.prices.tt_away_line);
+    var ttLine = parseLineNum(ttLineStr);
+    var ttDir = ttLineStr && /under/i.test(ttLineStr) ? 'Under' : 'Over';
+    if (ttLine != null) {
+      var ttRelevant = isRealRec((fx.team_total||{})[side]);
+      var ttHit = rateStat(items, function(it){ return ttDir === 'Under' ? it.scoreFor < ttLine.num : it.scoreFor > ttLine.num; });
+      if (ttHit) push('Team Total '+ttDir+' '+ttLine.text, ttHit.hits+'/'+ttHit.total, {relevant:ttRelevant, weight:4});
+
+      var otherSide = side === 'home' ? 'away' : 'home';
+      var oppItems = ((fx.snapshot||{})[otherSide]||{}).last10 || [];
+      if (oppItems.length >= 3) {
+        var oppConceded = rateStat(oppItems, function(it){ return ttDir === 'Under' ? it.scoreAgainst < ttLine.num : it.scoreAgainst > ttLine.num; });
+        if (oppConceded) push('Conceded '+ttDir+' '+ttLine.text, oppConceded.hits+'/'+oppConceded.total, {
+          team: otherSide === 'home' ? fx.home : fx.away,
+          logo: otherSide === 'home' ? fx.homeLogo : fx.awayLogo,
+          relevant: ttRelevant, weight: 3.5
+        });
+      }
+    }
+
+    return out;
+  }
+
+  function streakRowHtml(e){
+    return '<div class="streak-row'+(e.relevant?' relevant':'')+'">'+
+        badge(e.team, e.logo, 'sm')+
+        '<span class="streak-label"><span>'+esc(e.label)+'</span>'+(e.relevant?'<span class="streak-tag">Pick</span>':'')+'</span>'+
+        '<span class="streak-value '+e.tone+'">'+esc(e.value)+'</span>'+
+      '</div>';
+  }
+
+  var STREAKS_SHOW_MAX = 10;
+  function streaksHtml(fx){
+    var entries = teamStreakEntries(fx, 'home').concat(teamStreakEntries(fx, 'away'));
+    if (!entries.length) return '';
+    // Rows that support this fixture's real recommendations first (Carlos, 2026-09-19:
+    // "I am interested in the ones that support the recommendations"), then the more
+    // notable general-form stats fill out the rest.
+    entries.sort(function(a,b){ return (b.relevant - a.relevant) || (b.weight - a.weight); });
+    var shown = entries.slice(0, STREAKS_SHOW_MAX);
+    return '<div class="moves-overview streaks-box">'+
+        '<h4>Streaks (last 10)</h4>'+
+        '<div class="streak-list">'+shown.map(streakRowHtml).join('')+'</div>'+
+      '</div>';
+  }
+
   function marketsHtml(fx){
     var out = '';
     out += marketRowHtml(fx, 'best_bet', null, fx.best_bet, 'Best Bet');
@@ -1333,6 +1487,7 @@
       '</div>'+
       '<div class="expand" id="expand-'+esc(fx.id)+'">'+
         snapshotHtml(fx)+
+        streaksHtml(fx)+
         relatedBetsHtml(fx)+
         last10Html(fx)+
         movesOverviewHtml(fx)+
