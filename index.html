@@ -359,6 +359,11 @@
   .live-score-chip.live::before{content:'\25cf'; margin-right:4px; animation:live-pulse 1.4s ease-in-out infinite;}
   @keyframes live-pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
   @media (prefers-reduced-motion: reduce){ .live-score-chip.live::before{animation:none;} }
+  /* Performance tab's "Score" column (2026-09-20): same chip as the Tracker tab, just
+     without the top margin that made sense stacked under the match line there but not
+     sitting alone in its own table cell here. */
+  .perf-details-table .live-score-chip{margin-top:0;}
+  .perf-score-none{color:var(--dim);}
   .tr-live-refresh{display:flex; align-items:center; gap:8px; margin:10px 0;}
   .tr-refresh-btn{background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer;}
   .tr-refresh-btn:disabled{opacity:.6; cursor:default;}
@@ -595,6 +600,7 @@
           <th class="sortable" data-sort="marketKey">Type<span class="sort-arrow"></span></th>
           <th class="sortable" data-sort="name">By<span class="sort-arrow"></span></th>
           <th class="sortable" data-sort="status">Status<span class="sort-arrow"></span></th>
+          <th>Score</th>
           <th class="sortable num" data-sort="units">Units<span class="sort-arrow"></span></th>
         </tr></thead>
         <tbody id="perf-details-body"></tbody>
@@ -2519,32 +2525,43 @@
     }
     return sortedOrder.map(function(k){ return buckets[k]; });
   }
-  // Live/previous-score badge for a pending tracked entry -- Carlos, 2026-09-17: "can
-  // we see these on the dashboard though?", then "this is only for the today's games,
-  // we could get the previous scores from the fixtures table." Two sources, checked in
+  // Live/previous-score badge for a tracked entry -- Carlos, 2026-09-17: "can we see
+  // these on the dashboard though?", then "this is only for the today's games, we
+  // could get the previous scores from the fixtures table." Two sources, checked in
   // order:
-  //   1. TRACKER_LIVE_SCORES -- TODAY's pending picks, fetched fresh by TrackerSync.gs
-  //      from api-football on every syncFromServer() call (real-time, refreshable with
-  //      the "Refresh live scores" button below).
-  //   2. PREVIOUS_SCORES -- older pending picks (any earlier day), baked in by
-  //      push_soccer_tracker_v6.py from soccer.fixtures (the permanent archive) as of
-  //      the last regular pipeline run -- not live, no separate refresh control for it
-  //      (it only changes when the pipeline runs again), styled as a plain "FT" chip
-  //      rather than the pulsing "LIVE" one so it's clear which kind it is.
+  //   1. TRACKER_LIVE_SCORES -- TODAY's still-*pending* picks only, fetched fresh by
+  //      TrackerSync.gs from api-football on every syncFromServer() call (real-time,
+  //      refreshable with the "Refresh live scores" button below). Never has an entry
+  //      for an already-graded pick, so this branch is a no-op for those.
+  //   2. PREVIOUS_SCORES -- everything else with a real fixture id, baked in by
+  //      push_soccer_tracker_v6.py's attach_previous_scores_for_tracked_picks() from
+  //      soccer.fixtures (the permanent archive) as of the last regular pipeline run --
+  //      not live, no separate refresh control for it (it only changes when the
+  //      pipeline runs again), styled as a plain "FT" chip rather than the pulsing
+  //      "LIVE" one so it's clear which kind it is.
+  // Widened, 2026-09-20: originally only ever called for status==='pending' entries.
+  // Carlos: "I want to see the score of the fixture on the tracker and the performance
+  // tab ... to be able to analyze what went wrong" -- so a graded pick (won/half_won/
+  // push/half_lost/lost) now falls straight to the PREVIOUS_SCORES check too, same as
+  // a pending pick with no live source. Used on both the Tracker tab (trackerCardHtml)
+  // and the Performance tab's details table (renderPerfDetails) -- one source of truth
+  // so the two can't show a different score for the same pick.
   // Shows nothing for a fixture that hasn't kicked off yet (no point badging
   // "0-0 Not Started" on every future pending pick) or when neither source has
-  // anything for it (not fetched yet, older than the archive covers, etc).
+  // anything for it (not fetched yet, older than the archive covers, a parlay/custom
+  // entry with no single fx_id, etc).
   function liveScoreChipHtml(e){
-    if (e.status !== 'pending') return '';
     var fxId = String(e.fxId||'');
-    var live = TRACKER_LIVE_SCORES[fxId];
-    if (live && live.short) {
-      var inPlay = !!LIVE_IN_PLAY[live.short];
-      var finished = !!LIVE_FINISHED[live.short];
-      if (inPlay || finished) {
-        var score = (live.goalsHome!=null?live.goalsHome:'-')+'-'+(live.goalsAway!=null?live.goalsAway:'-');
-        var label = inPlay ? ('LIVE'+(live.elapsed!=null?' '+live.elapsed+'\'':'')) : (live.long || 'Final');
-        return '<span class="live-score-chip'+(inPlay?' live':'')+'">'+esc(label)+' '+esc(score)+'</span>';
+    if (e.status === 'pending') {
+      var live = TRACKER_LIVE_SCORES[fxId];
+      if (live && live.short) {
+        var inPlay = !!LIVE_IN_PLAY[live.short];
+        var finished = !!LIVE_FINISHED[live.short];
+        if (inPlay || finished) {
+          var score = (live.goalsHome!=null?live.goalsHome:'-')+'-'+(live.goalsAway!=null?live.goalsAway:'-');
+          var label = inPlay ? ('LIVE'+(live.elapsed!=null?' '+live.elapsed+'\'':'')) : (live.long || 'Final');
+         return '<span class="live-score-chip'+(inPlay?' live':'')+'">'+esc(label)+' '+esc(score)+'</span>';
+        }
       }
     }
     var prev = PREVIOUS_SCORES[fxId];
@@ -2957,7 +2974,7 @@
     lastPerfArr = arr;
     updatePerfSortHeaders();
     var body = document.getElementById('perf-details-body');
-    if (!arr.length) { body.innerHTML = '<tr><td colspan="7"><div class="perf-empty">No tracked picks in range.</div></td></tr>'; return; }
+    if (!arr.length) { body.innerHTML = '<tr><td colspan="8"><div class="perf-empty">No tracked picks in range.</div></td></tr>'; return; }
     var sorted = arr.slice().sort(perfDetailsCompare);
     body.innerHTML = sorted.map(function(e){
       var units = profitFor(e);
@@ -2972,6 +2989,7 @@
         '<td>'+esc(marketKeyLabel(e.marketKey))+'</td>'+
         '<td>'+esc(e.name||'?')+'</td>'+
         '<td><span class="status-chip '+esc(e.status)+'">'+esc(STATUS_LABELS[e.status]||e.status)+'</span></td>'+
+        '<td>'+(liveScoreChipHtml(e)||'<span class="perf-score-none">\u2013</span>')+'</td>'+
         '<td class="num units '+unitsClass(units)+'">'+fmtUnits(units)+'</td>'+
       '</tr>';
     }).join('');
