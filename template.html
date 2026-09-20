@@ -545,6 +545,7 @@
       <label class="tr-datelabel">To <input type="date" id="tr-to"></label>
       <label class="tr-datelabel">Group by
         <select id="tr-group">
+          <option value="status" selected>Live / Future / Finished</option>
           <option value="none">None</option>
           <option value="league">League</option>
           <option value="date">Date</option>
@@ -2450,6 +2451,62 @@
   // Canonical market order, matches how every market already lists on a fixture card
   // (see cardHtml()/marketRowHtml() above) rather than an alphabetical fallback.
   var MARKET_GROUP_ORDER = ['best_bet','match_total','btts','team_total','ml','dc','ah','custom','parlay'];
+  // Buckets a tracked entry into 'live', 'future', or 'finished' -- Carlos, 2026-09-20:
+  // "let's split the picks between live, future and finished in that order," then, to
+  // clarify: "finished, but not marked (won, lost, push, etc) picks qualify as live."
+  // So 'finished' means GRADED (status !== 'pending'), not just "the match is over" --
+  // a match that's already ended but Carlos hasn't graded yet stays in 'live' as a
+  // to-do, right alongside matches still actually being played. 'future' is the only
+  // bucket about the match's own clock; 'live' is everything pending from kickoff
+  // onward, whether the game is still going or just needs grading.
+  //   - status !== 'pending' -> always 'finished', regardless of match state.
+  //   - status === 'pending' -> checks TRACKER_LIVE_SCORES first (today's picks only,
+  //     see liveScoreChipHtml() above) for the real match state: either in-play or
+  //     already full-time both count as 'live' here (ungraded). A status TRACKER_LIVE_
+  //     SCORES doesn't recognize as either (e.g. 'NS', not started yet) falls through
+  //     to comparing kickoff time against now -- kicked off already (or no exact time
+  //     but on record for today or earlier) is 'live', not yet is 'future'. A pick
+  //     with no resolvable kickoff time at all defaults to 'future' rather than
+  //     guessing it already happened.
+  function pickMatchState(e){
+    if (e.status !== 'pending') return 'finished';
+    var fxId = String(e.fxId||'');
+    var live = TRACKER_LIVE_SCORES[fxId];
+    if (live && live.short) {
+      if (LIVE_IN_PLAY[live.short] || LIVE_FINISHED[live.short]) return 'live';
+      // e.g. 'NS' (not started) -- fall through to the kickoff-time check below.
+    }
+    var ts = entryKickoffTs(e);
+    var kickoffMs = ts ? new Date(ts).getTime() : NaN;
+    if (isNaN(kickoffMs)) return 'future';
+    return Date.now() >= kickoffMs ? 'live' : 'future';
+  }
+  var MATCH_STATE_LABELS = {live:'Live', future:'Future', finished:'Finished'};
+  var MATCH_STATE_ORDER = {live:0, future:1, finished:2};
+  // Within the 'live' bucket specifically: is this one ready to grade right now?
+  // Carlos, 2026-09-20, on why he wants live/future/finished split: "I want to be able
+  // to see all live games or just finished games first, so I can mark the picks as won
+  // or lost" -- the picks he actually needs to act on are the ones whose match has
+  // already ended but haven't been graded yet (pickMatchState() above keeps those in
+  // 'live', not 'finished', since 'finished' means graded). Sorting those to the top of
+  // the Live section (see groupTrackerEntries() below) surfaces exactly what needs
+  // grading without hiding the still-actually-in-progress picks below them -- one view
+  // serves both "what's live" and "what do I need to grade" instead of a separate mode
+  // to switch between them.
+  var GRADING_READY_AFTER_KICKOFF_MS = 3 * 60 * 60 * 1000; // same 3h assumption as the old finished cutoff
+  function pickNeedsGrading(e){
+    var fxId = String(e.fxId||'');
+    var live = TRACKER_LIVE_SCORES[fxId];
+    if (live && live.short) return !!LIVE_FINISHED[live.short];
+    // No live source for this one (not today, sync hasn't run yet, an older
+    // TrackerSync.gs deployment) -- assume it's done, and thus grade-ready, once a
+    // full match's worth of time has passed since kickoff; otherwise treat it as still
+    // in progress so it doesn't jump ahead of picks we know for sure have finished.
+    var ts = entryKickoffTs(e);
+    var kickoffMs = ts ? new Date(ts).getTime() : NaN;
+    if (isNaN(kickoffMs)) return false;
+    return (Date.now() - kickoffMs) >= GRADING_READY_AFTER_KICKOFF_MS;
+  }
   // Buckets an already kickoff-sorted array (see renderTracker()) into labeled groups for
   // the #tr-group selector, preserving that order within each group -- grouping never
   // re-sorts the picks themselves, only which heading they fall under.
@@ -2485,6 +2542,8 @@
       } else if (mode === 'stars') {
         key = (e.stars==null) ? 'none' : e.stars.toFixed(1);
         label = (e.stars==null) ? 'No rating' : stars(e.stars);
+      } else if (mode === 'status') {
+        key = pickMatchState(e); label = MATCH_STATE_LABELS[key];
       } else { // 'market'
         key = e.marketKey || 'unknown'; label = marketKeyLabel(e.marketKey);
       }
@@ -2515,6 +2574,17 @@
         if (b === 'none') return -1;
         return parseFloat(b) - parseFloat(a); // highest confidence first
       });
+    } else if (mode === 'status') {
+      sortedOrder = order.slice().sort(function(a,b){ return MATCH_STATE_ORDER[a]-MATCH_STATE_ORDER[b]; });
+      // Grade-ready picks (match over, not marked yet) float to the top of the Live
+      // section -- see pickNeedsGrading() above. Array.prototype.sort is stable, so
+      // this only reorders needs-grading-vs-not; the existing kickoff-desc order is
+      // preserved within each half.
+      if (buckets['live']) {
+        buckets['live'].items = buckets['live'].items.slice().sort(function(a,b){
+          return (pickNeedsGrading(a)?0:1) - (pickNeedsGrading(b)?0:1);
+        });
+      }
     } else { // 'market'
       sortedOrder = order.slice().sort(function(a,b){
         var ia = MARKET_GROUP_ORDER.indexOf(a), ib = MARKET_GROUP_ORDER.indexOf(b);
