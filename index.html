@@ -501,7 +501,21 @@
      markup, see <body> below) renders as plain block flow with no special styling, same
      as always. See renderFixturesDesktop()/fxRowHtml()/fxDetailHeaderHtml()/
      fxDetailStatsHtml()/fxDetailRecsHtml() in <script> below for what fills these
-     containers. */
+     containers. Carlos, 2026-09-21 (v3): "make the dashboard height fixed for my two
+     resolutions, that way I only scroll on the cards" -- screenshots showed the whole
+     page scrolling (header/tabs stayed sticky-pinned, but the three columns lost sync
+     with each other and with the filters at the top of the nav column). Root cause:
+     each column was position:sticky with its own max-height/overflow-y:auto, but the
+     BODY was still what scrolled -- sticky items only reposition within page scroll,
+     they don't stop it. Switched to a true fixed-height shell instead: #tab-fixtures.
+     active itself gets height:calc(100vh - var(--header-h) - 106px) [106px = main's
+     12px+24px vertical padding plus body's 70px bottom padding, both already in the
+     base CSS above] and overflow:hidden, so the section never exceeds one viewport and
+     the page itself never scrolls while on this tab -- only #fxNavColumn/#fxStatsPanel/
+     #fxRecsPanel scroll, each independently, via height:100%+overflow-y:auto. --header-h
+     is the header's real measured pixel height (see syncHeaderHeightVar() near the
+     bottom of <script> below), not a guess, so this holds at any window size or zoom,
+     not just one resolution. */
   #fxListCompact, #fxDetailWrap{display:none;}
   .fx-row{
     background:var(--card); border:1px solid var(--border); border-radius:10px;
@@ -515,33 +529,35 @@
   .fx-row-vs{color:var(--dim); font-weight:400; font-size:11px;}
   @media (min-width:1100px){
     #tab-fixtures.active{
-      display:flex; flex-direction:row; align-items:flex-start; gap:20px;
+      display:flex; flex-direction:row; align-items:stretch; gap:20px;
       width:100vw; max-width:1500px; margin-left:50%; transform:translateX(-50%);
       padding:0 16px; box-sizing:border-box;
+      height:calc(100vh - var(--header-h, 72px) - 106px); overflow:hidden;
     }
     #tab-fixtures.active #fxNavColumn{
       width:300px; flex-shrink:0; display:flex; flex-direction:column; gap:16px;
-      position:sticky; top:70px; max-height:calc(100vh - 90px); overflow-y:auto; padding-right:4px;
+      height:100%; overflow-y:auto; padding-right:4px;
     }
     #tab-fixtures.active #fxNavColumn .filters{
-      flex-direction:column; align-items:stretch; margin-bottom:0;
+      flex-direction:column; align-items:stretch; margin-bottom:0; flex-shrink:0;
     }
     #tab-fixtures.active #fxNavColumn .filters select,
     #tab-fixtures.active #fxNavColumn .filters input[type=search],
     #tab-fixtures.active #fxNavColumn .filters .dropdown-btn{ flex:none; width:100%; }
+    #tab-fixtures.active #fxNavColumn #fxListCompact{ flex:1 1 auto; min-height:0; overflow-y:auto; }
     #tab-fixtures.active #fixtureList{ display:none; }
     #tab-fixtures.active #fxListCompact{ display:block; }
     #tab-fixtures.active #fxDetailWrap{
-      display:flex; flex-direction:column; gap:16px; flex:1 1 0; min-width:0;
+      display:flex; flex-direction:column; gap:16px; flex:1 1 0; min-width:0; height:100%; overflow:hidden;
     }
     #tab-fixtures.active #fxDetailHeader{ flex-shrink:0; }
     #tab-fixtures.active #fxDetailHeader .card{ margin-bottom:0; }
     #tab-fixtures.active .fx-detail-cols{
-      display:flex; flex-direction:row; align-items:flex-start; gap:20px;
+      display:flex; flex-direction:row; align-items:stretch; gap:20px; flex:1 1 auto; min-height:0;
     }
     #tab-fixtures.active .fx-detail-panel{
       display:block; flex:1 1 0; min-width:0;
-      position:sticky; top:70px; max-height:calc(100vh - 90px); overflow-y:auto; padding-right:4px;
+      height:100%; overflow-y:auto; padding-right:4px;
     }
     #tab-fixtures.active .fx-detail-panel .card{ margin-bottom:0; }
   }
@@ -4057,6 +4073,22 @@
   renderPerformance();
   initParlays();
   syncFromServer();
+
+  // ---------- desktop Fixtures-tab fixed height (Carlos, 2026-09-21: "make the
+  // dashboard height fixed for my two resolutions, that way I only scroll on the
+  // cards") ----------
+  // Measures the header's real rendered pixel height into --header-h so the >=1100px
+  // three-column Fixtures layout (see that media query above) can size itself to
+  // exactly fill the rest of the viewport instead of guessing a fixed offset -- holds
+  // at any window size/zoom, not just one resolution. Re-measured on resize since the
+  // title/tabs row can wrap differently at different widths.
+  function syncHeaderHeightVar(){
+    var h = document.querySelector('header.top');
+    if (!h) return;
+    document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+  }
+  syncHeaderHeightVar();
+  window.addEventListener('resize', syncHeaderHeightVar);
 })();
 </script>
 </body>
