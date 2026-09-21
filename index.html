@@ -482,17 +482,27 @@
     :root[data-theme="light"] .market-row, :root[data-theme="light"] .last10-item, :root[data-theme="light"] .relbet-item, :root[data-theme="light"] .streak-row{ border-bottom-color:rgba(0,0,0,.08); }
     :root[data-theme="dark"] .market-row, :root[data-theme="dark"] .last10-item, :root[data-theme="dark"] .relbet-item, :root[data-theme="dark"] .streak-row{ border-bottom-color:rgba(43,227,255,.22); }
   }
-  /* ---------- Fixtures tab: desktop (>=1100px) three-pane layout ----------
-     Carlos, 2026-09-21, approved: on screens >=1100px wide, the Fixtures tab switches
-     from the mobile vertical stack (filters above one column of cards) to a persistent
-     three-pane layout -- filters sidebar, a compact fixture list, a detail panel showing
-     the selected fixture's full breakdown. This is a single min-width media query, not a
-     JS resize listener: below 1100px none of it applies, #fxListCompact/.fx-detail-panel
-     stay display:none (set outside the query, right below), and the page is exactly what
-     it was before this change -- #fixtureList (the untouched card-grid render path in
-     renderFixtures()) is what shows. See renderFixturesDesktop()/fxRowHtml()/
-     fxDetailHtml() in <script> below for what fills these two containers. */
-  #fxListCompact, .fx-detail-panel{display:none;}
+  /* ---------- Fixtures tab: desktop (>=1100px) layout ----------
+     Carlos, 2026-09-21, approved (v1): filters sidebar + compact fixture list + one
+     detail panel, three sticky columns. Carlos, 2026-09-21 (v2): "combine the filters
+     and fixture into a single column, then a column for stats and a column for the
+     recommendations and possible bets" -- filters and the compact list now share one
+     sticky nav column (#fxNavColumn), and the detail panel itself splits into two: a
+     shared, non-sticky header strip (league/badges, team names, the headline Best Bet
+     pill) sitting above two independently-sticky panels, Stats (#fxStatsPanel: Team
+     Snapshot, Streaks, Last 10, then the raw "full stats" disclosure) and Recommendations
+     & Bets (#fxRecsPanel: Related Bets, Line Moves, All Six Markets, the custom-pick
+     tracker) -- Line Moves sits with Recs since it's one of the inputs behind "why this
+     bet", same idea as grouping it with Markets. Still a single min-width media query,
+     not a JS resize listener: below 1100px none of it applies, #fxListCompact/#fxDetailWrap
+     stay display:none (set outside the query, right below) and the page is exactly what
+     it was before -- #fixtureList (the untouched card-grid render path in
+     renderFixtures()) is what shows, and .filters (nested inside #fxNavColumn in the
+     markup, see <body> below) renders as plain block flow with no special styling, same
+     as always. See renderFixturesDesktop()/fxRowHtml()/fxDetailHeaderHtml()/
+     fxDetailStatsHtml()/fxDetailRecsHtml() in <script> below for what fills these
+     containers. */
+  #fxListCompact, #fxDetailWrap{display:none;}
   .fx-row{
     background:var(--card); border:1px solid var(--border); border-radius:10px;
     padding:8px 10px; margin-bottom:6px; cursor:pointer;
@@ -505,22 +515,33 @@
   .fx-row-vs{color:var(--dim); font-weight:400; font-size:11px;}
   @media (min-width:1100px){
     #tab-fixtures.active{
-      display:grid; grid-template-columns:230px minmax(280px,380px) 1fr; gap:16px; align-items:start;
-      width:100vw; max-width:1400px; margin-left:50%; transform:translateX(-50%);
+      display:flex; flex-direction:row; align-items:flex-start; gap:20px;
+      width:100vw; max-width:1500px; margin-left:50%; transform:translateX(-50%);
       padding:0 16px; box-sizing:border-box;
     }
-    #tab-fixtures.active .filters{
-      flex-direction:column; align-items:stretch; position:sticky; top:70px; margin-bottom:0;
+    #tab-fixtures.active #fxNavColumn{
+      width:300px; flex-shrink:0; display:flex; flex-direction:column; gap:16px;
+      position:sticky; top:70px; max-height:calc(100vh - 90px); overflow-y:auto; padding-right:4px;
     }
-    #tab-fixtures.active .filters select,
-    #tab-fixtures.active .filters input[type=search],
-    #tab-fixtures.active .filters .dropdown-btn{ flex:none; width:100%; }
+    #tab-fixtures.active #fxNavColumn .filters{
+      flex-direction:column; align-items:stretch; margin-bottom:0;
+    }
+    #tab-fixtures.active #fxNavColumn .filters select,
+    #tab-fixtures.active #fxNavColumn .filters input[type=search],
+    #tab-fixtures.active #fxNavColumn .filters .dropdown-btn{ flex:none; width:100%; }
     #tab-fixtures.active #fixtureList{ display:none; }
-    #tab-fixtures.active #fxListCompact{
-      display:block; position:sticky; top:70px; max-height:calc(100vh - 90px); overflow:auto; padding-right:4px;
+    #tab-fixtures.active #fxListCompact{ display:block; }
+    #tab-fixtures.active #fxDetailWrap{
+      display:flex; flex-direction:column; gap:16px; flex:1 1 0; min-width:0;
+    }
+    #tab-fixtures.active #fxDetailHeader{ flex-shrink:0; }
+    #tab-fixtures.active #fxDetailHeader .card{ margin-bottom:0; }
+    #tab-fixtures.active .fx-detail-cols{
+      display:flex; flex-direction:row; align-items:flex-start; gap:20px;
     }
     #tab-fixtures.active .fx-detail-panel{
-      display:block; position:sticky; top:70px; max-height:calc(100vh - 90px); overflow:auto; padding-right:4px;
+      display:block; flex:1 1 0; min-width:0;
+      position:sticky; top:70px; max-height:calc(100vh - 90px); overflow-y:auto; padding-right:4px;
     }
     #tab-fixtures.active .fx-detail-panel .card{ margin-bottom:0; }
   }
@@ -547,41 +568,49 @@
   </section>
 
   <section class="tab" id="tab-fixtures">
-    <div class="filters">
-      <select id="f-day"><option value="">All days</option></select>
-      <button class="dropdown-btn" id="f-league-btn">League <span class="count" id="f-league-count"></span></button>
-      <button class="dropdown-btn" id="f-time-btn">Kickoff <span class="count" id="f-time-count"></span></button>
-      <select id="f-stars">
-        <option value="0">Any stars</option>
-        <option value="2">2★+</option>
-        <option value="3">3★+</option>
-        <option value="3.5">3.5★+</option>
-        <option value="4">4★+</option>
-        <option value="4.5">4.5★+</option>
-      </select>
-      <select id="f-market">
-        <option value="">All markets</option>
-        <option value="best_bet">Best Bet or Parlay Leg</option>
-        <option value="match_total">Match Total</option>
-        <option value="btts">BTTS</option>
-        <option value="team_total">Team Total</option>
-        <option value="ml">Moneyline</option>
-        <option value="dc">Double Chance</option>
-        <option value="ah">Asian Handicap</option>
-      </select>
-      <input type="search" id="f-team" placeholder="Search team name…">
-      <select id="fx-group">
-        <option value="none">Group: None</option>
-        <option value="league">Group: League</option>
-        <option value="date">Group: Date</option>
-        <option value="kickoff">Group: Kickoff Time</option>
-        <option value="stars">Group: Star Rating</option>
-        <option value="market">Group: Best Bet Market Type</option>
-      </select>
+    <div id="fxNavColumn" class="fx-nav-column">
+          <div class="filters">
+            <select id="f-day"><option value="">All days</option></select>
+            <button class="dropdown-btn" id="f-league-btn">League <span class="count" id="f-league-count"></span></button>
+            <button class="dropdown-btn" id="f-time-btn">Kickoff <span class="count" id="f-time-count"></span></button>
+            <select id="f-stars">
+              <option value="0">Any stars</option>
+              <option value="2">2★+</option>
+              <option value="3">3★+</option>
+              <option value="3.5">3.5★+</option>
+              <option value="4">4★+</option>
+              <option value="4.5">4.5★+</option>
+            </select>
+            <select id="f-market">
+              <option value="">All markets</option>
+              <option value="best_bet">Best Bet or Parlay Leg</option>
+              <option value="match_total">Match Total</option>
+              <option value="btts">BTTS</option>
+              <option value="team_total">Team Total</option>
+              <option value="ml">Moneyline</option>
+              <option value="dc">Double Chance</option>
+              <option value="ah">Asian Handicap</option>
+            </select>
+            <input type="search" id="f-team" placeholder="Search team name…">
+            <select id="fx-group">
+              <option value="none">Group: None</option>
+              <option value="league">Group: League</option>
+              <option value="date">Group: Date</option>
+              <option value="kickoff">Group: Kickoff Time</option>
+              <option value="stars">Group: Star Rating</option>
+              <option value="market">Group: Best Bet Market Type</option>
+            </select>
+          </div>
+      <div id="fxListCompact" class="fx-list-compact"></div>
     </div>
     <div id="fixtureList"></div>
-    <div id="fxListCompact" class="fx-list-compact"></div>
-    <div id="fxDetailPanel" class="fx-detail-panel"></div>
+    <div id="fxDetailWrap" class="fx-detail-wrap">
+      <div id="fxDetailHeader" class="fx-detail-header"></div>
+      <div class="fx-detail-cols">
+        <div id="fxStatsPanel" class="fx-detail-panel fx-stats-panel"></div>
+        <div id="fxRecsPanel" class="fx-detail-panel fx-recs-panel"></div>
+      </div>
+    </div>
   </section>
 
   <section class="tab" id="tab-tracker">
@@ -1966,7 +1995,19 @@
         bestBetSummaryLine(fx)+
       '</div>';
   }
-  function fxDetailHtml(fx){
+  // Carlos, 2026-09-21: "combine the filters and fixture into a single column, then a
+  // column for stats and a column for the recommendations and possible bets" -- the old
+  // single fxDetailHtml() (one big card: header + everything) is now three functions,
+  // one per container (#fxDetailHeader/#fxStatsPanel/#fxRecsPanel; see the CSS comment
+  // above the >=1100px media query for the full column layout). Each wraps its own
+  // .card so the three read as separate panels; still the same sub-functions
+  // (bestBetSummaryLine, snapshotHtml, streaksHtml, last10Html, relatedBetsHtml,
+  // movesOverviewHtml, marketsHtml, fullStatsHtml) so this is a regroup, not a rewrite --
+  // no fixture data flows through here that wasn't already flowing through the old
+  // combined card, and the existing document-level [data-fs-toggle]/[data-cp-toggle]/
+  // [data-cp-add] click delegation (below) needs no changes since it's keyed off
+  // closest(), never getElementById.
+  function fxDetailHeaderHtml(fx){
     if (!fx) return '<div class="empty">Select a fixture to see full details.</div>';
     var dayLabel = fmtDay(fx.date) + ' \u00b7 ' + fmtTime(fx.ts);
     return '<div class="card fx-detail-card" data-fxid="'+esc(fx.id)+'">'+
@@ -1979,11 +2020,31 @@
           '</div>'+
           bestBetSummaryLine(fx)+
         '</div>'+
+      '</div>';
+  }
+  // STATS panel: Team Snapshot, Streaks, Last 10, then the raw "full stats" disclosure --
+  // everything that's about what the teams HAVE done, not what to bet on it.
+  function fxDetailStatsHtml(fx){
+    if (!fx) return '';
+    return '<div class="card fx-detail-card" data-fxid="'+esc(fx.id)+'">'+
         '<div class="expand open">'+
           snapshotHtml(fx)+
           streaksHtml(fx)+
-          relatedBetsHtml(fx)+
           last10Html(fx)+
+          '<button class="fullstats-toggle" data-fs-toggle="'+esc(fx.id)+'">Show full stats (all raw data)</button>'+
+          '<div class="fullstats" id="fs-'+esc(fx.id)+'">'+fullStatsHtml(fx)+'</div>'+
+        '</div>'+
+      '</div>';
+  }
+  // RECOMMENDATIONS & BETS panel: Related Bets, Line Moves, All Six Markets, the
+  // custom-pick tracker -- everything that's about what to bet and why. Line Moves lives
+  // here (not in Stats) because it's one of the inputs behind a pick's confidence (is the
+  // market agreeing with this bet), same grouping idea as Markets.
+  function fxDetailRecsHtml(fx){
+    if (!fx) return '';
+    return '<div class="card fx-detail-card" data-fxid="'+esc(fx.id)+'">'+
+        '<div class="expand open">'+
+          relatedBetsHtml(fx)+
           movesOverviewHtml(fx)+
           marketsHtml(fx)+
           '<div class="custom-pick">'+
@@ -1997,15 +2058,18 @@
               '</div>'+
             '</div>'+
           '</div>'+
-          '<button class="fullstats-toggle" data-fs-toggle="'+esc(fx.id)+'">Show full stats (all raw data)</button>'+
-          '<div class="fullstats" id="fs-'+esc(fx.id)+'">'+fullStatsHtml(fx)+'</div>'+
         '</div>'+
       '</div>';
   }
   function renderFixtureDetailPanel(){
-    var panel = document.getElementById('fxDetailPanel');
-    if (!panel) return;
-    panel.innerHTML = fxDetailHtml(selectedDetailFixtureId ? findFixture(selectedDetailFixtureId) : null);
+    var headerEl = document.getElementById('fxDetailHeader');
+    var statsEl = document.getElementById('fxStatsPanel');
+    var recsEl = document.getElementById('fxRecsPanel');
+    if (!headerEl || !statsEl || !recsEl) return;
+    var fx = selectedDetailFixtureId ? findFixture(selectedDetailFixtureId) : null;
+    headerEl.innerHTML = fxDetailHeaderHtml(fx);
+    statsEl.innerHTML = fxDetailStatsHtml(fx);
+    recsEl.innerHTML = fxDetailRecsHtml(fx);
   }
   function renderFixturesDesktop(list, groupMode){
     var listEl = document.getElementById('fxListCompact');
