@@ -477,6 +477,48 @@
     :root[data-theme="light"] .market-row, :root[data-theme="light"] .last10-item, :root[data-theme="light"] .relbet-item, :root[data-theme="light"] .streak-row{ border-bottom-color:rgba(0,0,0,.08); }
     :root[data-theme="dark"] .market-row, :root[data-theme="dark"] .last10-item, :root[data-theme="dark"] .relbet-item, :root[data-theme="dark"] .streak-row{ border-bottom-color:rgba(43,227,255,.22); }
   }
+  /* ---------- Fixtures tab: desktop (>=1100px) three-pane layout ----------
+     Carlos, 2026-09-21, approved: on screens >=1100px wide, the Fixtures tab switches
+     from the mobile vertical stack (filters above one column of cards) to a persistent
+     three-pane layout -- filters sidebar, a compact fixture list, a detail panel showing
+     the selected fixture's full breakdown. This is a single min-width media query, not a
+     JS resize listener: below 1100px none of it applies, #fxListCompact/.fx-detail-panel
+     stay display:none (set outside the query, right below), and the page is exactly what
+     it was before this change -- #fixtureList (the untouched card-grid render path in
+     renderFixtures()) is what shows. See renderFixturesDesktop()/fxRowHtml()/
+     fxDetailHtml() in <script> below for what fills these two containers. */
+  #fxListCompact, .fx-detail-panel{display:none;}
+  .fx-row{
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:8px 10px; margin-bottom:6px; cursor:pointer;
+  }
+  .fx-row:hover{border-color:var(--accent);}
+  .fx-row.selected{border-color:var(--accent); box-shadow:var(--shadow);}
+  .fx-row-meta{display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--dim); margin-bottom:4px;}
+  .fx-row-time{margin-left:auto; font-weight:600; color:var(--text);}
+  .fx-row-teams{font-size:13px; font-weight:600; margin-bottom:6px;}
+  .fx-row-vs{color:var(--dim); font-weight:400; font-size:11px;}
+  @media (min-width:1100px){
+    #tab-fixtures.active{
+      display:grid; grid-template-columns:230px minmax(280px,380px) 1fr; gap:16px; align-items:start;
+      width:100vw; max-width:1400px; margin-left:50%; transform:translateX(-50%);
+      padding:0 16px; box-sizing:border-box;
+    }
+    #tab-fixtures.active .filters{
+      flex-direction:column; align-items:stretch; position:sticky; top:70px; margin-bottom:0;
+    }
+    #tab-fixtures.active .filters select,
+    #tab-fixtures.active .filters input[type=search],
+    #tab-fixtures.active .filters .dropdown-btn{ flex:none; width:100%; }
+    #tab-fixtures.active #fixtureList{ display:none; }
+    #tab-fixtures.active #fxListCompact{
+      display:block; position:sticky; top:70px; max-height:calc(100vh - 90px); overflow:auto; padding-right:4px;
+    }
+    #tab-fixtures.active .fx-detail-panel{
+      display:block; position:sticky; top:70px; max-height:calc(100vh - 90px); overflow:auto; padding-right:4px;
+    }
+    #tab-fixtures.active .fx-detail-panel .card{ margin-bottom:0; }
+  }
 </style>
 </head>
 <body>
@@ -533,6 +575,8 @@
       </select>
     </div>
     <div id="fixtureList"></div>
+    <div id="fxListCompact" class="fx-list-compact"></div>
+    <div id="fxDetailPanel" class="fx-detail-panel"></div>
   </section>
 
   <section class="tab" id="tab-tracker">
@@ -1576,6 +1620,7 @@
   // ---------- Fixtures tab / filters ----------
   var leagueSet = [], timeSet = [];
   var leagueSelected = new Set(), timeSelected = new Set();
+  var selectedDetailFixtureId = null; // Fixtures tab desktop (>=1100px) detail-panel selection
 
   function buildFilterOptions(){
     var days = Array.from(new Set(FIXTURES.map(function(f){return f.date;}))).filter(Boolean).sort();
@@ -1833,6 +1878,7 @@
     var list = FIXTURES.filter(passesFilters);
     if (!list.length) {
       document.getElementById('fixtureList').innerHTML = '<div class="empty">No fixtures match these filters.</div>';
+      renderFixturesDesktop([], 'none');
       return;
     }
     var groupMode = document.getElementById('fx-group') ? document.getElementById('fx-group').value : 'none';
@@ -1843,10 +1889,111 @@
         return '<h3 class="tr-group-heading">'+esc(g.label)+'</h3>'+g.items.map(function(f){ return cardHtml(f); }).join('');
       }).join('');
     }
+    renderFixturesDesktop(list, groupMode);
+  }
+
+  // ---------- Fixtures tab, desktop (>=1100px): compact list + persistent detail panel.
+  // Carlos, 2026-09-21: "auto switch to a 3-pane desktop layout above 1100px" -- a single
+  // @media (min-width:1100px) rule (see <style> above) hides #fixtureList and shows
+  // #fxListCompact/#fxDetailPanel instead, so nothing here runs conditionally on width;
+  // it always renders into both, and CSS decides which one is visible. The card-grid
+  // branch above (#fixtureList) is untouched -- this reuses the exact same already-
+  // filtered/grouped `list`/`groupMode` renderFixtures() just built, and the same
+  // fxRowHtml -> bestBetSummaryLine / cardHtml sub-functions (bestBetSummaryLine,
+  // snapshotHtml, streaksHtml, relatedBetsHtml, last10Html, movesOverviewHtml,
+  // marketsHtml, fullStatsHtml) so the detail panel shows literally the same markup as
+  // today's tap-to-expand card, and the existing document-level [data-track]/
+  // [data-fs-toggle]/[data-cp-toggle]/[data-cp-add] click delegation (below) just works
+  // on it unmodified since that delegation is keyed off class/data attributes via
+  // closest(), never getElementById (same reason a fixture already safely renders twice,
+  // once in Top Picks and once in Fixtures -- see syncTrackButtons()/addCustomTrack()
+  // above).
+  function fxRowHtml(fx){
+    var dayLabel = fmtDay(fx.date) + ' \u00b7 ' + fmtTime(fx.ts);
+    var selCls = (fx.id === selectedDetailFixtureId) ? ' selected' : '';
+    return '<div class="fx-row'+selCls+'" data-fxrow="'+esc(fx.id)+'">'+
+        '<div class="fx-row-meta"><span class="fx-row-league">'+esc(fx.league)+'</span>'+
+          (fx.top5?'<span class="top5-chip">TOP '+fx.top5+'</span>':'')+
+          '<span class="fx-row-time">'+esc(dayLabel)+'</span></div>'+
+        '<div class="fx-row-teams">'+esc(fx.home)+' <span class="fx-row-vs">vs</span> '+esc(fx.away)+'</div>'+
+        bestBetSummaryLine(fx)+
+      '</div>';
+  }
+  function fxDetailHtml(fx){
+    if (!fx) return '<div class="empty">Select a fixture to see full details.</div>';
+    var dayLabel = fmtDay(fx.date) + ' \u00b7 ' + fmtTime(fx.ts);
+    return '<div class="card fx-detail-card" data-fxid="'+esc(fx.id)+'">'+
+        '<div class="summary" style="cursor:default;">'+
+          '<div class="league-row">'+badge(fx.league, fx.leagueLogo,'sm')+' <span>'+esc(fx.league)+'</span>'+(fx.top5?'<span class="top5-chip">TOP '+fx.top5+'</span>':'')+'<span class="time">'+esc(dayLabel)+'</span></div>'+
+          '<div class="matchup">'+
+            '<div class="team">'+badge(fx.home, fx.homeLogo)+'<span>'+esc(fx.home)+'</span></div>'+
+            '<div class="vs">vs</div>'+
+            '<div class="team" style="justify-content:flex-end; text-align:right;">'+'<span>'+esc(fx.away)+'</span>'+badge(fx.away, fx.awayLogo)+'</div>'+
+          '</div>'+
+          bestBetSummaryLine(fx)+
+        '</div>'+
+        '<div class="expand open">'+
+          snapshotHtml(fx)+
+          streaksHtml(fx)+
+          relatedBetsHtml(fx)+
+          last10Html(fx)+
+          movesOverviewHtml(fx)+
+          marketsHtml(fx)+
+          '<div class="custom-pick">'+
+            '<button class="fullstats-toggle" data-cp-toggle="'+esc(fx.id)+'">+ Track a custom pick (market or line not shown above)</button>'+
+            '<div class="cp-form" id="cp-form-'+esc(fx.id)+'">'+
+              '<input type="text" class="cp-desc" maxlength="80" placeholder="e.g. Match Total Over 2.0" data-cp-desc="'+esc(fx.id)+'">'+
+              '<div class="cp-row2">'+
+                '<input type="number" step="1" class="cp-odds" placeholder="Odds" data-cp-odds="'+esc(fx.id)+'">'+
+                '<span class="cp-hint">Odds you got at your book (optional)</span>'+
+                '<button class="cp-add-btn" data-cp-add="'+esc(fx.id)+'">Add to tracker</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+          '<button class="fullstats-toggle" data-fs-toggle="'+esc(fx.id)+'">Show full stats (all raw data)</button>'+
+          '<div class="fullstats" id="fs-'+esc(fx.id)+'">'+fullStatsHtml(fx)+'</div>'+
+        '</div>'+
+      '</div>';
+  }
+  function renderFixtureDetailPanel(){
+    var panel = document.getElementById('fxDetailPanel');
+    if (!panel) return;
+    panel.innerHTML = fxDetailHtml(selectedDetailFixtureId ? findFixture(selectedDetailFixtureId) : null);
+  }
+  function renderFixturesDesktop(list, groupMode){
+    var listEl = document.getElementById('fxListCompact');
+    if (!listEl) return;
+    if (!list.length) {
+      listEl.innerHTML = '<div class="empty">No fixtures match these filters.</div>';
+      selectedDetailFixtureId = null;
+      renderFixtureDetailPanel();
+      return;
+    }
+    var stillVisible = list.some(function(f){ return f.id === selectedDetailFixtureId; });
+    if (!stillVisible) {
+      var ranked = list.filter(function(f){ return f.top5 != null; }).sort(function(a,b){ return a.top5-b.top5; });
+      selectedDetailFixtureId = ranked.length ? ranked[0].id : list[0].id;
+    }
+    if (groupMode === 'none') {
+      listEl.innerHTML = list.map(fxRowHtml).join('');
+    } else {
+      listEl.innerHTML = groupFixtures(list, groupMode).map(function(g){
+        return '<h3 class="tr-group-heading">'+esc(g.label)+'</h3>'+g.items.map(fxRowHtml).join('');
+      }).join('');
+    }
+    renderFixtureDetailPanel();
   }
 
   // ---------- expand/collapse + full stats toggle (event delegation) ----------
   document.addEventListener('click', function(e){
+    var fxrow = e.target.closest('[data-fxrow]');
+    if (fxrow) {
+      selectedDetailFixtureId = fxrow.getAttribute('data-fxrow');
+      document.querySelectorAll('.fx-row.selected').forEach(function(r){ r.classList.remove('selected'); });
+      fxrow.classList.add('selected');
+      renderFixtureDetailPanel();
+      return;
+    }
     var toggle = e.target.closest('[data-toggle]');
     if (toggle) {
       var card = toggle.closest('.card');
