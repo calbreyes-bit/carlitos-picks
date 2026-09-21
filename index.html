@@ -155,14 +155,19 @@
   .last10-score{flex:none; font-variant-numeric:tabular-nums; font-weight:600; width:34px; text-align:center;}
   .last10-empty{font-size:11px; color:var(--dim);}
 
-  /* "Streaks" box (Fixtures tab, after H2H) -- one mixed-team list, crest + label + value
-     per row, same as the last10/related-bets card shells. Carlos, 2026-09-19: "based on
-     the last 10 games, could we add a streaks section for each team?", then "also the
-     times a team has gone over the team total in the last 10 games", then sent a
-     reference screenshot of a similar widget, then "I am interested in the ones that
-     support the recommendations" -- rows tied to a market with a real (non-PASS) rec on
-     THIS fixture get a "PICK" tag + accent highlight and sort first, same "look at every
-     market" idea bestBetSummaryLine/altParlayLegPick already use elsewhere on this card. */
+  /* "Streaks" box (Fixtures tab, after H2H) -- one card per team (see .moves-row below),
+     crest + label + value per row, same as the last10/related-bets card shells. Carlos,
+     2026-09-19: "based on the last 10 games, could we add a streaks section for each
+     team?", then "also the times a team has gone over the team total in the last 10
+     games", then sent a reference screenshot of a similar widget, then "I am interested
+     in the ones that support the recommendations" -- rows tied to a market with a real
+     (non-PASS) rec on THIS fixture get a "PICK" tag + accent highlight and sort first,
+     same "look at every market" idea bestBetSummaryLine/altParlayLegPick already use
+     elsewhere on this card. Carlos, 2026-09-21: "10 games could be misleading" -- some
+     rate stats (BTTS, Match/Team Total, Conceded) now auto-swap to a shorter recent
+     window when it disagrees sharply with the full 10 games (recentDivergentRate), and
+     "split that card into 2, one for the Home and one for the Away team" -- was a single
+     mixed-team list, now grouped per team. */
   .streak-list{display:flex; flex-direction:column;}
   .streak-row{display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px;}
   .streak-row:last-child{border-bottom:none;}
@@ -1302,6 +1307,25 @@
     return {hits: hits, total: items.length};
   }
 
+  // Recent-form window: when a stat's full last-10 rate and its more recent form
+  // disagree by a wide margin, the last-10 number is stale -- it's describing a trend
+  // that has already reversed. Carlos, 2026-09-21: "for the streaks section... 10 games
+  // could be misleading. For example for Juarez, [BTTS hit several times] in the last
+  // 10, but only one in the last 6, so that is not a streak." Prefer whichever window
+  // tells the truer story: fall back to the recent window only once there's enough
+  // history to trust it, and only when the disagreement is wide enough to matter (a
+  // point or two of noise between two small samples shouldn't make the number jump
+  // around).
+  var RECENT_FORM_WINDOW = 6;
+  var RECENT_FORM_DIVERGENCE = 0.25;
+  function recentDivergentRate(items, pred){
+    var full = rateStat(items, pred);
+    if (!full || items.length < RECENT_FORM_WINDOW) return full;
+    var recent = rateStat(items.slice(0, RECENT_FORM_WINDOW), pred);
+    if (Math.abs((full.hits/full.total) - (recent.hits/recent.total)) >= RECENT_FORM_DIVERGENCE) return recent;
+    return full;
+  }
+
   function teamStreakEntries(fx, side){
     var teamName = side === 'home' ? fx.home : fx.away;
     var teamLogo = side === 'home' ? fx.homeLogo : fx.awayLogo;
@@ -1326,27 +1350,35 @@
     else if (unbeatenStreak >= 3) push('Unbeaten', String(unbeatenStreak), {tone:'good', relevant:formRelevant, weight:unbeatenStreak});
     else if (winlessStreak >= 3) push('Winless', String(winlessStreak), {tone:'bad', relevant:formRelevant, weight:winlessStreak});
 
-    // -- clean sheet / conceding streak: single most notable one --
+    // -- clean sheet / conceding streak: single most notable one. BTTS-relevant, same as
+    // the BTTS rate below (Carlos, 2026-09-21: a real "not allowed a goal in 3 straight"
+    // streak is more decision-relevant than a stale 10-game BTTS rate, so it should
+    // compete for a slot on the same footing instead of getting crowded out by it).
+    var bttsRelevant = isRealRec(fx.btts);
     var noCleanSheet = currentRun(items, function(it){ return it.scoreAgainst > 0; });
     var cleanSheetStreak = currentRun(items, function(it){ return it.scoreAgainst === 0; });
-    if (noCleanSheet >= 3) push('No clean sheet', String(noCleanSheet), {tone:'bad', weight:noCleanSheet*0.8});
-    else if (cleanSheetStreak >= 2) push('Clean sheet streak', String(cleanSheetStreak), {tone:'good', weight:cleanSheetStreak*0.8});
+    if (noCleanSheet >= 3) push('No clean sheet', String(noCleanSheet), {tone:'bad', relevant:bttsRelevant, weight:noCleanSheet*0.8});
+    else if (cleanSheetStreak >= 2) push('Clean sheet streak', String(cleanSheetStreak), {tone:'good', relevant:bttsRelevant, weight:cleanSheetStreak*0.8});
 
-    // -- scoring streak: single most notable one --
+    // -- scoring streak: single most notable one. Team-Total-relevant for this side, same
+    // reasoning as clean-sheet above.
+    var ttRelevant = isRealRec((fx.team_total||{})[side]);
     var scoredStreak = currentRun(items, function(it){ return it.scoreFor > 0; });
     var blankedStreak = currentRun(items, function(it){ return it.scoreFor === 0; });
-    if (scoredStreak >= 3) push('Scored', scoredStreak+' straight', {tone:'good', weight:scoredStreak*0.7});
-    else if (blankedStreak >= 2) push('No goals', blankedStreak+' straight', {tone:'bad', weight:blankedStreak*0.7});
+    if (scoredStreak >= 3) push('Scored', scoredStreak+' straight', {tone:'good', relevant:ttRelevant, weight:scoredStreak*0.7});
+    else if (blankedStreak >= 2) push('No goals', blankedStreak+' straight', {tone:'bad', relevant:ttRelevant, weight:blankedStreak*0.7});
 
-    // -- BTTS rate -- relevant when this fixture actually has a live BTTS rec
-    var btts = rateStat(items, function(it){ return it.scoreFor > 0 && it.scoreAgainst > 0; });
-    if (btts) push('BTTS', btts.hits+'/'+btts.total, {relevant:isRealRec(fx.btts), weight:3});
+    // -- BTTS rate -- relevant when this fixture actually has a live BTTS rec. Uses
+    // recentDivergentRate (see above) so a stale full-10 rate doesn't outrank the team's
+    // actual current form.
+    var btts = recentDivergentRate(items, function(it){ return it.scoreFor > 0 && it.scoreAgainst > 0; });
+    if (btts) push('BTTS', btts.hits+'/'+btts.total, {relevant:bttsRelevant, weight:3});
 
     // -- Match total rate, using THIS fixture's actual total line -- relevant when Match
     // Total (or Best Bet, which is often the same pick) has a real rec.
     var totalLine = parseLineNum(fx.prices && fx.prices.total_line);
     if (totalLine != null) {
-      var over = rateStat(items, function(it){ return (it.scoreFor + it.scoreAgainst) > totalLine.num; });
+      var over = recentDivergentRate(items, function(it){ return (it.scoreFor + it.scoreAgainst) > totalLine.num; });
       if (over) push('Match Over '+totalLine.text, over.hits+'/'+over.total, {relevant:isRealRec(fx.match_total) || isRealRec(fx.best_bet), weight:4});
     }
 
@@ -1362,14 +1394,13 @@
     var ttLine = parseLineNum(ttLineStr);
     var ttDir = ttLineStr && /under/i.test(ttLineStr) ? 'Under' : 'Over';
     if (ttLine != null) {
-      var ttRelevant = isRealRec((fx.team_total||{})[side]);
-      var ttHit = rateStat(items, function(it){ return ttDir === 'Under' ? it.scoreFor < ttLine.num : it.scoreFor > ttLine.num; });
+      var ttHit = recentDivergentRate(items, function(it){ return ttDir === 'Under' ? it.scoreFor < ttLine.num : it.scoreFor > ttLine.num; });
       if (ttHit) push('Team Total '+ttDir+' '+ttLine.text, ttHit.hits+'/'+ttHit.total, {relevant:ttRelevant, weight:4});
 
       var otherSide = side === 'home' ? 'away' : 'home';
       var oppItems = ((fx.snapshot||{})[otherSide]||{}).last10 || [];
       if (oppItems.length >= 3) {
-        var oppConceded = rateStat(oppItems, function(it){ return ttDir === 'Under' ? it.scoreAgainst < ttLine.num : it.scoreAgainst > ttLine.num; });
+        var oppConceded = recentDivergentRate(oppItems, function(it){ return ttDir === 'Under' ? it.scoreAgainst < ttLine.num : it.scoreAgainst > ttLine.num; });
         if (oppConceded) push('Conceded '+ttDir+' '+ttLine.text, oppConceded.hits+'/'+oppConceded.total, {
           team: otherSide === 'home' ? fx.home : fx.away,
           logo: otherSide === 'home' ? fx.homeLogo : fx.awayLogo,
@@ -1390,17 +1421,33 @@
   }
 
   var STREAKS_SHOW_MAX = 10;
+
+  // Carlos, 2026-09-21: "can we split that card into 2, one for the Home and one for the
+  // Away team" -- was a single mixed-team list sorted together; now each side gets its
+  // own card, same .moves-row stack-on-phone/side-by-side-at-480px shell last10Html
+  // already uses just below this section. Entries are grouped by the team they're
+  // actually ABOUT (e.team), not by which teamStreakEntries() call produced them, since
+  // the "Conceded" entries are generated during the opposing side's call but describe
+  // THIS team's own defense.
+  function streakCardHtml(teamName, teamLogo, entries){
+    entries = entries.slice().sort(function(a,b){ return (b.relevant - a.relevant) || (b.weight - a.weight); }).slice(0, STREAKS_SHOW_MAX);
+    var body = entries.length
+      ? '<div class="streak-list">'+entries.map(streakRowHtml).join('')+'</div>'
+      : '<div class="last10-empty">Not enough recent history</div>';
+    return '<div class="moves-overview streaks-box">'+
+        '<h4>'+badge(teamName, teamLogo, 'sm')+' '+esc(teamName)+' – Streaks</h4>'+
+        body+
+      '</div>';
+  }
+
   function streaksHtml(fx){
     var entries = teamStreakEntries(fx, 'home').concat(teamStreakEntries(fx, 'away'));
     if (!entries.length) return '';
-    // Rows that support this fixture's real recommendations first (Carlos, 2026-09-19:
-    // "I am interested in the ones that support the recommendations"), then the more
-    // notable general-form stats fill out the rest.
-    entries.sort(function(a,b){ return (b.relevant - a.relevant) || (b.weight - a.weight); });
-    var shown = entries.slice(0, STREAKS_SHOW_MAX);
-    return '<div class="moves-overview streaks-box">'+
-        '<h4>Streaks (last 10)</h4>'+
-        '<div class="streak-list">'+shown.map(streakRowHtml).join('')+'</div>'+
+    var homeEntries = entries.filter(function(e){ return e.team === fx.home; });
+    var awayEntries = entries.filter(function(e){ return e.team === fx.away; });
+    return '<div class="moves-row">'+
+        streakCardHtml(fx.home, fx.homeLogo, homeEntries)+
+        streakCardHtml(fx.away, fx.awayLogo, awayEntries)+
       '</div>';
   }
 
