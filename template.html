@@ -653,6 +653,17 @@
           <option value="market">Best Bet Market Type</option>
         </select>
       </label>
+      <label class="tr-datelabel">Status
+        <select id="tr-status">
+          <option value="">All</option>
+          <option value="pending">Pending</option>
+          <option value="won">Won</option>
+          <option value="half_won">½ Won</option>
+          <option value="push">Push</option>
+          <option value="half_lost">½ Lost</option>
+          <option value="lost">Lost</option>
+        </select>
+      </label>
     </div>
     <div class="tsum">
       <div class="box"><div class="n" id="tr-record">0-0-0</div><div class="l">Record</div></div>
@@ -2236,7 +2247,8 @@
       localStorage.setItem(TR_FILTER_KEY, JSON.stringify({
         from: document.getElementById('tr-from').value,
         to: document.getElementById('tr-to').value,
-        group: document.getElementById('tr-group').value
+        group: document.getElementById('tr-group').value,
+        status: document.getElementById('tr-status').value
       }));
     } catch(e){}
   }
@@ -2249,6 +2261,7 @@
     if (saved.from) document.getElementById('tr-from').value = saved.from;
     if (saved.to) document.getElementById('tr-to').value = saved.to;
     if (saved.group) document.getElementById('tr-group').value = saved.group;
+    if (saved.status) document.getElementById('tr-status').value = saved.status;
   }
   function pad2(n){ return n<10 ? '0'+n : ''+n; }
   function dateStr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
@@ -2960,6 +2973,7 @@
     var identity = getIdentity();
     var fromVal = document.getElementById('tr-from') ? document.getElementById('tr-from').value : '';
     var toVal = document.getElementById('tr-to') ? document.getElementById('tr-to').value : '';
+    var statusVal = document.getElementById('tr-status') ? document.getElementById('tr-status').value : '';
     var filterActive = !!(fromVal || toVal);
     var arr = loadTracked().filter(function(e){
       if (filterActive && !e.date) return false; // undated legacy entries shouldn't slip through a date filter
@@ -2972,6 +2986,7 @@
       var eDay = e.date ? e.date.slice(0, 10) : e.date;
       if (fromVal && eDay && eDay < fromVal) return false;
       if (toVal && eDay && eDay > toVal) return false;
+      if (statusVal && e.status !== statusVal) return false;
       return true;
     }).sort(function(a,b){ return entryKickoffSortKey(b)-entryKickoffSortKey(a); });
     var w=0,l=0,p=0, units=0;
@@ -3022,6 +3037,7 @@
   document.getElementById('tr-from').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
   document.getElementById('tr-to').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
   document.getElementById('tr-group').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
+  document.getElementById('tr-status').addEventListener('change', function(){ saveTrackerFilterState(); renderTracker(); });
   document.getElementById('themeToggle').addEventListener('click', toggleTheme);
   (function(){
     var refreshBtn = document.getElementById('tr-refresh-scores');
