@@ -226,6 +226,17 @@
   .price-move .spark{flex:none; display:block;}
   .moves-overview{background:var(--chip-bg); border-radius:10px; padding:9px 10px; margin-bottom:12px;}
   .moves-overview h4{font-size:12px; margin:0 0 6px 0; color:var(--dim); text-transform:uppercase; letter-spacing:.03em;}
+  /* ---- collapsible Fixtures-tab detail sections -- Carlos, 2026-09-29: "it would be
+     great if the sections on the Fixtures tab were collapsible." Related Bets reuses
+     these same classes on its own existing h4 (see relatedBetsHtml() in <script>)
+     instead of a separate header row, so its count-aware title isn't duplicated. ---- */
+  .fx-section{margin-bottom:12px;}
+  .fx-section-head{display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; user-select:none; padding:2px 0 6px;}
+  .fx-section-head:hover .fx-section-title{color:var(--accent);}
+  .fx-section-title{font-size:12px; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:.03em;}
+  .fx-section-chevron{font-size:10px; color:var(--dim); transition:transform .15s ease; flex:none;}
+  .fx-section.collapsed .fx-section-chevron{transform:rotate(-90deg);}
+  .fx-section.collapsed .fx-section-body{display:none;}
   .moves-table{display:grid; grid-template-columns:auto 1fr 1fr; column-gap:8px; row-gap:4px; align-items:center;}
   .moves-table .mt-head{font-size:9.5px; color:var(--dim); text-transform:uppercase; letter-spacing:.02em;}
   .moves-table .mt-team{font-size:11.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
@@ -1658,20 +1669,20 @@
   var RELATED_BETS_SHOW_MAX = 8;
   function relatedBetsHtml(fx){
     var related = relatedBetsForFixture(fx);
+    var boxClass = 'moves-overview related-bets-box fx-section'+(isSectionCollapsed('relatedBets')?' collapsed':'');
     if (!related.length) {
-      return '<div class="moves-overview related-bets-box">'+
-          '<h4>Related Bets</h4>'+
-          '<div class="last10-empty">No tracked bets yet for '+esc(fx.home)+' or '+esc(fx.away)+'</div>'+
+      return '<div class="'+boxClass+'">'+
+          '<h4 class="fx-section-head" data-section-toggle="relatedBets">Related Bets<span class="fx-section-chevron">\u25BE</span></h4>'+
+          '<div class="fx-section-body"><div class="last10-empty">No tracked bets yet for '+esc(fx.home)+' or '+esc(fx.away)+'</div></div>'+
         '</div>';
     }
     var shown = related.slice(0, RELATED_BETS_SHOW_MAX);
     var more = related.length > RELATED_BETS_SHOW_MAX
       ? '<div class="related-bets-more">+'+(related.length-RELATED_BETS_SHOW_MAX)+' more in Tracker tab</div>'
       : '';
-    return '<div class="moves-overview related-bets-box">'+
-        '<h4>Related Bets ('+related.length+')</h4>'+
-        '<div class="related-bets-list">'+shown.map(relatedBetHtml).join('')+'</div>'+
-        more+
+    return '<div class="'+boxClass+'">'+
+        '<h4 class="fx-section-head" data-section-toggle="relatedBets">Related Bets ('+related.length+')<span class="fx-section-chevron">\u25BE</span></h4>'+
+        '<div class="fx-section-body"><div class="related-bets-list">'+shown.map(relatedBetHtml).join('')+'</div>'+more+'</div>'+
       '</div>';
   }
 
@@ -1887,6 +1898,23 @@
     updateDropdownCounts();
   }
 
+  // ---- Fixtures-tab detail-panel section collapse state (localStorage, per browser)
+  // -- Carlos, 2026-09-29: "it would be great if the sections on the Fixtures tab were
+  // collapsible." Keyed by section name (not fixture id), so a section stays collapsed
+  // as you click through different fixtures -- same discipline as FILTER_KEY above.
+  var FX_SECTIONS_KEY = 'matchDayFxSections_v1';
+  function loadCollapsedSections(){
+    try { return JSON.parse(localStorage.getItem(FX_SECTIONS_KEY) || '{}') || {}; } catch(e){ return {}; }
+  }
+  function isSectionCollapsed(key){
+    return !!loadCollapsedSections()[key];
+  }
+  function toggleSectionCollapsed(key){
+    var state = loadCollapsedSections();
+    state[key] = !state[key];
+    try { localStorage.setItem(FX_SECTIONS_KEY, JSON.stringify(state)); } catch(e){}
+  }
+
   function passesFilters(fx){
     var day = document.getElementById('f-day').value;
     if (day && fx.date !== day) return false;
@@ -2100,14 +2128,30 @@
   }
   // STATS panel: Team Snapshot, Streaks, Last 10, then the raw "full stats" disclosure --
   // everything that's about what the teams HAVE done, not what to bet on it.
+  // ---- generic collapsible wrapper for a Fixtures-tab detail section -- see the
+  // FX_SECTIONS_KEY helpers above for the persisted collapsed/expanded state. Returns
+  // '' (renders nothing, no empty header) when bodyHtml is empty, same discipline the
+  // section functions themselves already use (e.g. streaksHtml() returning '' when a
+  // fixture has no streak data).
+  function collapsibleSection(key, title, bodyHtml){
+    if (!bodyHtml) return '';
+    var collapsed = isSectionCollapsed(key);
+    return '<div class="fx-section'+(collapsed?' collapsed':'')+'">'+
+        '<div class="fx-section-head" data-section-toggle="'+esc(key)+'">'+
+          '<span class="fx-section-title">'+esc(title)+'</span>'+
+          '<span class="fx-section-chevron">\u25BE</span>'+
+        '</div>'+
+        '<div class="fx-section-body">'+bodyHtml+'</div>'+
+      '</div>';
+  }
   function fxDetailStatsHtml(fx){
     if (!fx) return '';
     return '<div class="card fx-detail-card" data-fxid="'+esc(fx.id)+'">'+
         '<div class="expand open">'+
-          snapshotHtml(fx)+
-          streaksHtml(fx)+
-          last10Html(fx)+
-          injuriesHtml(fx)+
+          collapsibleSection('snapshot', 'Snapshot', snapshotHtml(fx))+
+          collapsibleSection('streaks', 'Streaks', streaksHtml(fx))+
+          collapsibleSection('last10', 'Last 10', last10Html(fx))+
+          collapsibleSection('injuries', 'Injuries', injuriesHtml(fx))+
           '<button class="fullstats-toggle" data-fs-toggle="'+esc(fx.id)+'">Show full stats (all raw data)</button>'+
           '<div class="fullstats" id="fs-'+esc(fx.id)+'">'+fullStatsHtml(fx)+'</div>'+
         '</div>'+
@@ -2122,8 +2166,8 @@
     return '<div class="card fx-detail-card" data-fxid="'+esc(fx.id)+'">'+
         '<div class="expand open">'+
           relatedBetsHtml(fx)+
-          movesOverviewHtml(fx)+
-          marketsHtml(fx)+
+          collapsibleSection('lineMoves', 'Line Moves', movesOverviewHtml(fx))+
+          collapsibleSection('markets', 'Markets', marketsHtml(fx))+
           '<div class="custom-pick">'+
             '<button class="fullstats-toggle" data-cp-toggle="'+esc(fx.id)+'">+ Track a custom pick (market or line not shown above)</button>'+
             '<div class="cp-form" id="cp-form-'+esc(fx.id)+'">'+
@@ -2187,6 +2231,15 @@
       var card = toggle.closest('.card');
       var ex = card ? card.querySelector('.expand') : null;
       if (ex) ex.classList.toggle('open');
+      return;
+    }
+    var sectionToggle = e.target.closest('[data-section-toggle]');
+    if (sectionToggle) {
+      e.stopPropagation();
+      var sectionKey = sectionToggle.getAttribute('data-section-toggle');
+      toggleSectionCollapsed(sectionKey);
+      var sectionWrap = sectionToggle.closest('.fx-section');
+      if (sectionWrap) sectionWrap.classList.toggle('collapsed');
       return;
     }
     var fs = e.target.closest('[data-fs-toggle]');
