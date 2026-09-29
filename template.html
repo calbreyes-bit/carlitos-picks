@@ -154,6 +154,12 @@
   .last10-opp span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .last10-score{flex:none; font-variant-numeric:tabular-nums; font-weight:600; width:34px; text-align:center;}
   .last10-empty{font-size:11px; color:var(--dim);}
+  .injuries-list{display:flex; flex-direction:column; gap:2px;}
+  .injuries-item{display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:3px 0; border-bottom:1px solid var(--border); font-size:11.5px;}
+  .injuries-item:last-child{border-bottom:none;}
+  .injuries-player{font-weight:600;}
+  .injuries-reason{color:var(--dim); text-align:right; flex:none;}
+  .injuries-empty{font-size:11px; color:var(--dim);}
 
   /* "Streaks" box (Fixtures tab, after H2H) -- one card per team (see .moves-row below),
      crest + label + value per row, same as the last10/related-bets card shells. Carlos,
@@ -369,6 +375,11 @@
      sitting alone in its own table cell here. */
   .perf-details-table .live-score-chip{margin-top:0;}
   .perf-score-none{color:var(--dim);}
+  .parlay-leg-scores{margin-top:6px; display:flex; flex-direction:column; gap:3px;}
+  .parlay-leg-scores .parlay-leg-score-row{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11.5px; color:var(--dim); padding:3px 8px; background:var(--bg); border:1px solid var(--border); border-radius:8px;}
+  .parlay-leg-scores .leg-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .parlay-leg-scores .leg-tbd{color:var(--dim); font-size:11px;}
+  .parlay-leg-scores .live-score-chip{margin-top:0; flex-shrink:0;}
   .tr-live-refresh{display:flex; align-items:center; gap:8px; margin:10px 0;}
   .tr-refresh-btn{background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer;}
   .tr-refresh-btn:disabled{opacity:.6; cursor:default;}
@@ -784,6 +795,11 @@
   "use strict";
   var DATA = JSON.parse(document.getElementById('fixtures-data').textContent || '{"fixtures":[]}');
   var FIXTURES = DATA.fixtures || [];
+  // fxId -> fixture object, for looking up team names on a parlay's individual legs
+  // (parlayLegScoreListHtml() below) -- built once here rather than scanning FIXTURES
+  // per leg per card render.
+  var FX_BY_ID = {};
+  FIXTURES.forEach(function(fx){ FX_BY_ID[String(fx.id)] = fx; });
   // Final scores for pending tracker picks that AREN'T today's games -- baked in
   // by push_soccer_tracker_v6.py's attach_previous_scores_for_pending_picks() from
   // soccer.fixtures (the permanent archive), refreshed only as of the last pipeline
@@ -843,7 +859,7 @@
       // the fallback badge with no background color. Setting the style first (while
       // still attached) then swapping in the initials text after fixes it with the
       // exact same intended end state.
-      return '<span class="'+cls+'" style="background:'+bg+'"><img src="'+esc(logoUrl)+'" alt="" loading="lazy" ' +
+      return '<span class="'+cls+'"><img src="'+esc(logoUrl)+'" alt="" loading="lazy" ' +
              'onerror="this.parentElement.style.background=\''+bg+'\';this.parentElement.innerHTML=\''+esc(initials(name))+'\';"></span>';
     }
     return '<span class="'+cls+'" style="background:'+bg+'">'+esc(initials(name))+'</span>';
@@ -1333,6 +1349,34 @@
     return '<div class="moves-row">'+
         last10CardHtml(fx.home, fx.homeLogo, h.last10 || [])+
         last10CardHtml(fx.away, fx.awayLogo, a.last10 || [])+
+      '</div>';
+  }
+
+  // ---- per-team current injuries for THIS fixture (soccer.injuries, via
+  // soccer_injuries_import.py + push_soccer_tracker_v6.py's _attach_injuries()) --
+  // Carlos, 2026-09-29: "do you know if the api give us information about the
+  // lineups, injuries and player stats so maybe we can add this data to the
+  // tracker?", then on where: "to start, this should just be information on the
+  // Fixtures tab." Same side-by-side card shell as last10Html() above, one column
+  // simpler (just player + reason, no date/opponent/score).
+  function injuriesItemHtml(item){
+    return '<div class="injuries-item"><span class="injuries-player">'+esc(item.player||'Unknown')+'</span><span class="injuries-reason">'+esc(item.reason||'')+'</span></div>';
+  }
+  function injuriesCardHtml(teamName, teamLogo, items){
+    var body = (items && items.length)
+      ? '<div class="injuries-list">'+items.map(injuriesItemHtml).join('')+'</div>'
+      : '<div class="injuries-empty">No reported injuries</div>';
+    return '<div class="moves-overview injuries-card">'+
+        '<h4>'+badge(teamName, teamLogo, 'sm')+' '+esc(teamName)+' – Injuries</h4>'+
+        body+
+      '</div>';
+  }
+  function injuriesHtml(fx){
+    var snap = fx.snapshot || {};
+    var h = snap.home || {}, a = snap.away || {};
+    return '<div class="moves-row">'+
+        injuriesCardHtml(fx.home, fx.homeLogo, h.injuries || [])+
+        injuriesCardHtml(fx.away, fx.awayLogo, a.injuries || [])+
       '</div>';
   }
 
@@ -2063,6 +2107,7 @@
           snapshotHtml(fx)+
           streaksHtml(fx)+
           last10Html(fx)+
+          injuriesHtml(fx)+
           '<button class="fullstats-toggle" data-fs-toggle="'+esc(fx.id)+'">Show full stats (all raw data)</button>'+
           '<div class="fullstats" id="fs-'+esc(fx.id)+'">'+fullStatsHtml(fx)+'</div>'+
         '</div>'+
@@ -2920,8 +2965,7 @@
   // "0-0 Not Started" on every future pending pick) or when neither source has
   // anything for it (not fetched yet, older than the archive covers, a parlay/custom
   // entry with no single fx_id, etc).
-  function liveScoreChipHtml(e){
-    var fxId = String(e.fxId||'');
+  function scoreChipForFxId(fxId){
     var live = TRACKER_LIVE_SCORES[fxId];
     if (live && live.short) {
       var inPlay = !!LIVE_IN_PLAY[live.short];
@@ -2939,6 +2983,32 @@
     }
     return '';
   }
+  function liveScoreChipHtml(e){
+    return scoreChipForFxId(String(e.fxId||''));
+  }
+  // Carlos, 2026-09-27: "the parlays are link to specific fixtures, is it possible to
+  // get the live scores for them and display them on the tracker tab?" A parlay's
+  // fxId is every leg's fixture id joined with "+" (see trackParlay()), so
+  // liveScoreChipHtml()'s single-id lookup above always misses for one -- that's by
+  // design, it just shows nothing for a parlay's combined id like any id matching
+  // neither score source. This builds one row per leg instead, each with its own team
+  // names (looked up from FX_BY_ID -- falls back to "Leg N" if that fixture has aged
+  // out of the current dashboard JSON) and its own live/FT/not-started chip from the
+  // exact same scoreChipForFxId() single-fixture logic every straight pick uses, so a
+  // parlay leg can never show a different score than that same fixture's own pick
+  // would elsewhere on the page.
+  function parlayLegScoreListHtml(e){
+    if (e.marketKey !== 'parlay') return '';
+    var ids = String(e.fxId||'').split('+').filter(Boolean);
+    if (ids.length < 2) return '';
+    var rows = ids.map(function(fxId, i){
+      var fx = FX_BY_ID[fxId];
+      var label = fx ? (esc(fx.home)+' vs '+esc(fx.away)) : ('Leg '+(i+1));
+      var chip = scoreChipForFxId(fxId);
+      return '<div class="parlay-leg-score-row"><span class="leg-name">'+label+'</span>'+(chip||'<span class="leg-tbd">Not started</span>')+'</div>';
+    }).join('');
+    return '<div class="parlay-leg-scores">'+rows+'</div>';
+  }
   function trackerCardHtml(e, identity){
 
       var mine = !!(identity && e.name === identity.name);
@@ -2946,7 +3016,7 @@
         (mine ? '<button class="remove-btn" data-remove="'+esc(e.trackId)+'">✕</button>' : '')+
       '</div>';
       if (!mine) {
-        return '<div class="tcard readonly" data-trackid="'+esc(e.trackId)+'">'+head+
+        return '<div class="tcard readonly" data-trackid="'+esc(e.trackId)+'">'+head+parlayLegScoreListHtml(e)+
           '<div class="row2 readonly">'+
             '<span class="ro-odds">'+esc(e.odds!=null?fmtAmerican(e.odds):'–')+'</span>'+
             '<span class="ro-stake">'+esc(e.stake)+'u</span>'+
@@ -2954,7 +3024,7 @@
           '</div>'+
         '</div>';
       }
-      return '<div class="tcard" data-trackid="'+esc(e.trackId)+'">'+head+
+      return '<div class="tcard" data-trackid="'+esc(e.trackId)+'">'+head+parlayLegScoreListHtml(e)+
         '<div class="row2">'+
           'Odds <input type="number" step="1" value="'+esc(e.odds!=null?e.odds:'')+'" data-odds="'+esc(e.trackId)+'" title="Type the odds you actually got at your sportsbook">'+
           'Stake <input type="number" min="0" step="0.25" value="'+esc(e.stake)+'" data-stake="'+esc(e.trackId)+'">'+
