@@ -12,6 +12,7 @@
     --red:#dc2626; --red-bg:#fee2e2; --amber:#d97706; --amber-bg:#fef3c7;
     --star:#f59e0b; --chip-bg:#eef0f3; --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 8px rgba(0,0,0,.04);
     --mcfc-blue:#6cabdd; /* Man City sky blue -- fixed, not redefined by either theme */
+    --pitch-grass-a:#2f9e44; --pitch-grass-b:#278740; --pitch-line:rgba(255,255,255,.85); /* lineup pitch diagram -- see the .pitch-wrap CSS block below */
   }
   @media (prefers-color-scheme: dark){
     :root{
@@ -29,6 +30,7 @@
     --red:#ff4f6d; --red-bg:#2c0913; --amber:#ffb454; --amber-bg:#2c1a08;
     --star:#ffd35c; --chip-bg:#0a1e29;
     --shadow:0 0 0 1px rgba(43,227,255,.35), 0 0 10px rgba(43,227,255,.4), 0 0 28px rgba(43,227,255,.18), 0 2px 10px rgba(0,0,0,.65);
+    --pitch-grass-a:#052e1c; --pitch-grass-b:#03210f; --pitch-line:rgba(43,227,255,.55);
     }
   }
   *{box-sizing:border-box;}
@@ -160,6 +162,43 @@
   .injuries-player{font-weight:600;}
   .injuries-reason{color:var(--dim); text-align:right; flex:none;}
   .injuries-empty{font-size:11px; color:var(--dim);}
+
+  /* Lineups pitch diagram (Fixtures tab) -- Carlos, 2026-09-29: "now lineups, do we
+     have lineups for the fixtures, are we able to display them in a soccer field?"
+     One shared horizontal pitch, not two side-by-side team boxes like Last 10/
+     Injuries: home team's GK sits near the left edge attacking right, away team's GK
+     sits near the right edge attacking left (mirrored), so the two starting XIs read
+     as one formation-vs-formation picture. Player positions are computed in JS from
+     each player's own API-provided "grid" row:column coordinate (see
+     computePitchPositions() below) -- nothing here is per-formation-hardcoded, so a
+     back-3 (4 rows) and a 4-2-3-1 (5 rows) both lay out correctly off the same CSS.
+     Lineups aren't posted by the provider until shortly before kickoff (see
+     soccer_lineups_import.py's module docstring), so most fixtures show
+     .lineup-empty most of the time -- expected, not a bug.
+     --pitch-grass-a / --pitch-grass-b / --pitch-line are theme tokens (added to all
+     three :root blocks above, same convention as --bg/--card/etc) so the stripe and
+     line colors flip with light/dark like everything else on the page -- a real
+     green pitch in light mode, tinted toward the HUD cyan aesthetic in dark mode. */
+  .lineup-empty{font-size:11px; color:var(--dim); padding:4px 0;}
+  .lineup-meta-row{display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:11.5px; color:var(--dim); margin-bottom:8px;}
+  .lineup-meta-row .lm-side{display:flex; align-items:center; gap:5px; min-width:0; overflow:hidden;}
+  .lineup-meta-row .lm-side span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .lineup-meta-row .lm-away{flex-direction:row-reverse; text-align:right;}
+  .lineup-meta-row .lm-form{font-weight:700; color:var(--text);}
+  .pitch-wrap{position:relative; width:100%; aspect-ratio:16/10; border-radius:10px; overflow:hidden; border:1px solid var(--border); margin-bottom:4px;
+    background:repeating-linear-gradient(90deg, var(--pitch-grass-a) 0, var(--pitch-grass-a) 10%, var(--pitch-grass-b) 10%, var(--pitch-grass-b) 20%);
+  }
+  .pitch-lines{position:absolute; inset:0; width:100%; height:100%;}
+  .pitch-chip{position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:2px; width:16%; text-align:center;}
+  .pitch-num{width:22px; height:22px; border-radius:50%; background:var(--card); border:1.5px solid var(--border); color:var(--text);
+    font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow); flex:none;}
+  .pitch-chip.away .pitch-num{border-color:var(--accent); border-width:2px;}
+  .pitch-name{font-size:9px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.75); line-height:1.15; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .lineup-subs{margin-top:8px;}
+  .lineup-subs-title{font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; color:var(--dim); margin-bottom:4px;}
+  .lineup-subs-row{display:flex; justify-content:space-between; gap:10px; font-size:10.5px;}
+  .lineup-subs-row .ls-side{flex:1 1 0; min-width:0; color:var(--text); line-height:1.5;}
+  .lineup-subs-row .ls-away{text-align:right;}
 
   /* "Streaks" box (Fixtures tab, after H2H) -- one card per team (see .moves-row below),
      crest + label + value per row, same as the last10/related-bets card shells. Carlos,
@@ -456,6 +495,7 @@
     --accent:#2563eb; --accent-dim:#dbeafe; --green:#16a34a; --green-bg:#dcfce7;
     --red:#dc2626; --red-bg:#fee2e2; --amber:#d97706; --amber-bg:#fef3c7;
     --star:#f59e0b; --chip-bg:#eef0f3; --shadow:0 1px 2px rgba(0,0,0,.06),0 1px 8px rgba(0,0,0,.04);
+    --pitch-grass-a:#2f9e44; --pitch-grass-b:#278740; --pitch-line:rgba(255,255,255,.85);
   }
   :root[data-theme="dark"]{
     /* same HUD cyan theme as the prefers-color-scheme block above, kept in sync
@@ -465,6 +505,7 @@
     --red:#ff4f6d; --red-bg:#2c0913; --amber:#ffb454; --amber-bg:#2c1a08;
     --star:#ffd35c; --chip-bg:#0a1e29;
     --shadow:0 0 0 1px rgba(43,227,255,.35), 0 0 10px rgba(43,227,255,.4), 0 0 28px rgba(43,227,255,.18), 0 2px 10px rgba(0,0,0,.65);
+    --pitch-grass-a:#052e1c; --pitch-grass-b:#03210f; --pitch-line:rgba(43,227,255,.55);
   }
   .theme-toggle-btn{
     position:absolute; top:9px; right:14px; background:var(--card); border:1px solid var(--border);
@@ -1391,6 +1432,112 @@
       '</div>';
   }
 
+  // ---- Lineups pitch diagram -- see the CSS block above (.pitch-wrap etc.) for the
+  // visual design rationale. "grid" is the API's own row:column coordinate (row 1 =
+  // GK, increasing toward the attacking end -- confirmed against the live API, see
+  // soccer_lineups_import.py's module docstring). maxRow is computed from THIS
+  // team's actual startXI every call, never hardcoded per formation, so a back-3
+  // (4 rows) and a 4-2-3-1 (5 rows) both lay out correctly.
+  function parseGridCoord(grid){
+    if (!grid) return null;
+    var parts = String(grid).split(':');
+    var row = parseInt(parts[0], 10), col = parseInt(parts[1], 10);
+    if (!isFinite(row) || !isFinite(col)) return null;
+    return {row: row, col: col};
+  }
+  function computePitchPositions(startXI, side){
+    var withGrid = (startXI || []).map(function(p){
+      var g = parseGridCoord(p.grid);
+      return g ? {player: p, row: g.row, col: g.col} : null;
+    }).filter(Boolean);
+    if (!withGrid.length) return [];
+    var maxRow = withGrid.reduce(function(m, p){ return Math.max(m, p.row); }, 1);
+    var byRow = {};
+    withGrid.forEach(function(p){ (byRow[p.row] = byRow[p.row] || []).push(p); });
+    var positions = [];
+    Object.keys(byRow).forEach(function(rowKey){
+      var row = parseInt(rowKey, 10);
+      var players = byRow[row].slice().sort(function(a,b){ return a.col - b.col; });
+      var n = players.length;
+      var xPct = maxRow > 1
+        ? (side === 'home' ? 6 + ((row - 1) / (maxRow - 1)) * 40 : 94 - ((row - 1) / (maxRow - 1)) * 40)
+        : (side === 'home' ? 6 : 94);
+      players.forEach(function(p, idx){
+        var yPct = 10 + ((idx + 0.5) / n) * 80;
+        positions.push({player: p.player, xPct: xPct, yPct: yPct});
+      });
+    });
+    return positions;
+  }
+  function pitchChipHtml(pos, side){
+    var p = pos.player || {};
+    var nameParts = String(p.name || '').trim().split(/\s+/);
+    var lastName = nameParts[nameParts.length - 1];
+    return '<div class="pitch-chip '+side+'" style="left:'+pos.xPct.toFixed(1)+'%; top:'+pos.yPct.toFixed(1)+'%;">'+
+        '<span class="pitch-num">'+esc(p.number != null ? p.number : '')+'</span>'+
+        '<span class="pitch-name">'+esc(lastName)+'</span>'+
+      '</div>';
+  }
+  function pitchLinesSvg(){
+    // Pitch markings only -- outline, halfway line, center circle, two goal boxes --
+    // same inline-SVG approach as the sparklines/gdist charts elsewhere on this page.
+    // Stroke color comes from --pitch-line (theme token, see the CSS block above).
+    return '<svg class="pitch-lines" viewBox="0 0 100 62.5" preserveAspectRatio="none">'+
+        '<g fill="none" stroke="var(--pitch-line)" stroke-width="0.6">'+
+          '<rect x="1" y="1" width="98" height="60.5"/>'+
+          '<line x1="50" y1="1" x2="50" y2="61.5"/>'+
+          '<circle cx="50" cy="31.25" r="9"/>'+
+          '<rect x="1" y="18.75" width="12" height="25"/>'+
+          '<rect x="87" y="18.75" width="12" height="25"/>'+
+        '</g>'+
+      '</svg>';
+  }
+  function lineupSubsHtml(homeSubs, awaySubs){
+    function names(subs){
+      return (subs && subs.length)
+        ? esc(subs.map(function(p){ return p.name; }).join(', '))
+        : 'None listed';
+    }
+    return '<div class="lineup-subs">'+
+        '<div class="lineup-subs-title">Substitutes</div>'+
+        '<div class="lineup-subs-row">'+
+          '<div class="ls-side ls-home">'+names(homeSubs)+'</div>'+
+          '<div class="ls-side ls-away">'+names(awaySubs)+'</div>'+
+        '</div>'+
+      '</div>';
+  }
+  function lineupHtml(fx){
+    var snap = fx.snapshot || {};
+    var h = snap.home || {}, a = snap.away || {};
+    var homeLineup = h.lineup, awayLineup = a.lineup;
+    if (!homeLineup && !awayLineup){
+      return '<div class="lineup-empty">Lineups not yet available -- the provider posts them shortly before kickoff.</div>';
+    }
+    var homeXI = (homeLineup && homeLineup.startXI) || [];
+    var awayXI = (awayLineup && awayLineup.startXI) || [];
+    var homePositions = computePitchPositions(homeXI, 'home');
+    var awayPositions = computePitchPositions(awayXI, 'away');
+    var metaRow = '<div class="lineup-meta-row">'+
+        '<div class="lm-side">'+badge(fx.home, fx.homeLogo, 'sm')+
+          '<span>'+esc(fx.home)+(homeLineup && homeLineup.formation ? ' <span class="lm-form">('+esc(homeLineup.formation)+')</span>' : '')+'</span>'+
+        '</div>'+
+        '<div class="lm-side lm-away">'+
+          '<span>'+esc(fx.away)+(awayLineup && awayLineup.formation ? ' <span class="lm-form">('+esc(awayLineup.formation)+')</span>' : '')+'</span>'+
+          badge(fx.away, fx.awayLogo, 'sm')+
+        '</div>'+
+      '</div>';
+    var pitchBody = (homePositions.length || awayPositions.length)
+      ? pitchLinesSvg() +
+        homePositions.map(function(pos){ return pitchChipHtml(pos, 'home'); }).join('') +
+        awayPositions.map(function(pos){ return pitchChipHtml(pos, 'away'); }).join('')
+      : '';
+    var pitch = pitchBody
+      ? '<div class="pitch-wrap">'+pitchBody+'</div>'
+      : '<div class="lineup-empty">Lineup posted, but no starting-XI grid positions were returned.</div>';
+    var subs = lineupSubsHtml(homeLineup && homeLineup.substitutes, awayLineup && awayLineup.substitutes);
+    return metaRow + pitch + subs;
+  }
+
   // ---- "Streaks" section -- see the CSS comment above .streak-list for the request
   // history. Computed purely from fx.snapshot.<side>.last10 (already fetched for the
   // Last 10 cards above) plus this fixture's own current lines (fx.prices) for the
@@ -2152,6 +2299,7 @@
           collapsibleSection('streaks', 'Streaks', streaksHtml(fx))+
           collapsibleSection('last10', 'Last 10', last10Html(fx))+
           collapsibleSection('injuries', 'Injuries', injuriesHtml(fx))+
+          collapsibleSection('lineups', 'Lineups', lineupHtml(fx))+
           '<button class="fullstats-toggle" data-fs-toggle="'+esc(fx.id)+'">Show full stats (all raw data)</button>'+
           '<div class="fullstats" id="fs-'+esc(fx.id)+'">'+fullStatsHtml(fx)+'</div>'+
         '</div>'+
