@@ -481,6 +481,18 @@
   .np-field{display:block; font-size:12px; color:var(--dim); margin-bottom:12px;}
   .np-field input, .np-field select{display:block; width:100%; margin-top:6px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13.5px; box-sizing:border-box;}
   .np-create{display:block; width:100%; padding:10px; border:none; border-radius:8px; background:var(--accent); color:#fff; font-size:13px; font-weight:700; cursor:pointer; margin-top:2px;}
+
+  /* odds calculator tab */
+  .calc-card{padding:14px;}
+  .calc-head{font-size:14px; font-weight:700; margin-bottom:2px;}
+  .calc-sub{font-size:11.5px; color:var(--dim); margin-bottom:14px;}
+  .calc-implied{font-size:12.5px; color:var(--dim); margin-top:2px; min-height:16px;}
+  .calc-implied b{color:var(--text); font-weight:700;}
+  .calc-table{display:flex; flex-direction:column; margin-top:4px; font-variant-numeric:tabular-nums;}
+  .calc-table .calc-row{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px;}
+  .calc-table .calc-row:last-child{border-bottom:none;}
+  .calc-table .calc-row span:first-child{color:var(--dim);}
+  .calc-table .calc-row span:last-child{font-weight:600;}
   .lp-custom{margin-top:10px; border-top:1px solid var(--border); padding-top:10px;}
   .lp-custom-toggle{width:100%; padding:8px; border:1px dashed var(--border); border-radius:8px; background:none; color:var(--accent); font-size:12px; font-weight:600; cursor:pointer;}
   .lp-custom-form{margin-top:10px;}
@@ -643,6 +655,7 @@
     <button data-tab="tracker">Tracker</button>
     <button data-tab="performance">Performance</button>
     <button data-tab="parlays">Parlays</button>
+    <button data-tab="oddscalc">Odds Calc</button>
   </nav>
 </header>
 
@@ -799,6 +812,20 @@
       <span class="pl-skip-note" id="pl-skip-note"></span>
     </div>
     <div id="parlayList"></div>
+  </section>
+
+  <section class="tab" id="tab-oddscalc">
+    <div class="card calc-card">
+      <div class="calc-head">Odds Calculator</div>
+      <div class="calc-sub">Type in either field -- the other updates live.</div>
+      <label class="np-field">American (moneyline)<input type="number" step="1" id="calc-american" placeholder="-150" inputmode="numeric"></label>
+      <label class="np-field">Decimal<input type="number" step="0.01" id="calc-decimal" placeholder="1.67" inputmode="decimal"></label>
+      <div class="calc-implied" id="calc-implied"></div>
+    </div>
+    <div class="card calc-card">
+      <div class="calc-head">Quick reference</div>
+      <div class="calc-table" id="calc-table"></div>
+    </div>
   </section>
 </main>
 
@@ -2469,6 +2496,54 @@
       document.getElementById('tab-'+btn.getAttribute('data-tab')).classList.add('active');
     });
   });
+
+  // ---------- odds calculator (American <-> Decimal) ----------
+  // "American" here means moneyline odds (e.g. -150, +200) -- the format used
+  // everywhere else on this board (ml_rec, dc_rec, etc.) -- converted to/from
+  // Decimal odds (e.g. 1.67, 3.00), sometimes called "European" odds, which is
+  // why Carlos's original request named it that way.
+  function americanToDecimal(american){
+    if (american == null || isNaN(american) || american === 0) return null;
+    return american > 0 ? (american/100) + 1 : (100/Math.abs(american)) + 1;
+  }
+  function decimalToAmerican(decimal){
+    if (decimal == null || isNaN(decimal) || decimal <= 1) return null;
+    return decimal >= 2 ? (decimal-1)*100 : -100/(decimal-1);
+  }
+  function fmtAmerican(n){ return n==null ? '' : (n>0?'+':'') + Math.round(n); }
+  function fmtDecimal(n){ return n==null ? '' : n.toFixed(2); }
+  (function initOddsCalc(){
+    var amEl = document.getElementById('calc-american');
+    var decEl = document.getElementById('calc-decimal');
+    var impliedEl = document.getElementById('calc-implied');
+    var tableEl = document.getElementById('calc-table');
+    if (!amEl || !decEl) return; // defensive -- tab markup not present for some reason
+
+    function showImplied(decimal){
+      if (!impliedEl) return;
+      if (decimal == null || decimal <= 1){ impliedEl.textContent = ''; return; }
+      impliedEl.innerHTML = 'Implied probability: <b>' + (100/decimal).toFixed(1) + '%</b>';
+    }
+    amEl.addEventListener('input', function(){
+      if (amEl.value.trim() === ''){ decEl.value = ''; showImplied(null); return; }
+      var decimal = americanToDecimal(parseFloat(amEl.value));
+      if (decimal != null){ decEl.value = fmtDecimal(decimal); showImplied(decimal); }
+    });
+    decEl.addEventListener('input', function(){
+      if (decEl.value.trim() === ''){ amEl.value = ''; showImplied(null); return; }
+      var decimal = parseFloat(decEl.value);
+      var american = decimalToAmerican(decimal);
+      if (american != null){ amEl.value = fmtAmerican(american); showImplied(decimal); }
+    });
+
+    // quick reference -- common American prices, their Decimal equivalent
+    var COMMON = [-1000,-500,-300,-200,-150,-120,-110,100,110,120,150,200,300,500,1000];
+    if (tableEl){
+      tableEl.innerHTML = COMMON.map(function(a){
+        return '<div class="calc-row"><span>' + fmtAmerican(a) + '</span><span>' + fmtDecimal(americanToDecimal(a)) + '</span></div>';
+      }).join('');
+    }
+  })();
 
   // ---------- tracker (Google Sheets sync via Apps Script, localStorage cache) ----------
   var TRACK_KEY = 'matchDayTrackerCache_v1'; // last-synced picks (all users) -- offline fallback + instant paint
