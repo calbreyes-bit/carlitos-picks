@@ -125,6 +125,19 @@
      at a glance as "your top play here is a parlay leg, not a straight bet" rather than
      looking identical to a normal Best Bet. */
   .bb-line.parlay-alt{background:var(--amber-bg); color:var(--text); border-color:var(--amber);}
+  /* Carlos, 2026-10-07: highlight the value-edge ("Possible mispricing") signal inside the
+     recommendation box itself -- previously only a line of small gray reason text. Green
+     border/tint + a chip with the gap size; the full note renders as a callout under the
+     market's rec. Purely presentational: parsed from the existing reason string. */
+  .bb-line.value-edge{background:var(--green-bg); border-color:var(--green); box-shadow:0 0 0 1px var(--green) inset;}
+  /* Wrap instead of squeezing: the chip drops to its own line when the stars + pick + chip
+     don't fit, so the pick text never gets crushed or the chip pushed outside the box. */
+  .bb-line.value-edge, .bb-line.parlay-alt{flex-wrap:wrap; row-gap:4px;}
+  .ve-chip{display:inline-block; box-sizing:border-box; max-width:100%; overflow:hidden; text-overflow:ellipsis; flex:0 1 auto; margin-left:auto; padding:1px 7px; border-radius:999px; border:1px solid var(--green); background:var(--card); color:var(--text); font-size:11px; font-weight:700; white-space:nowrap;}
+  @media (max-width:720px){ .bb-line .ve-det{display:none;} }
+  .market-row .ve-chip{margin-left:6px;}
+  .market-row.ve-row{background:var(--green-bg); border-radius:8px; box-shadow:0 0 0 1px var(--green) inset;}
+  .market-row .ve-note{font-size:11.5px; font-weight:600; color:var(--text); margin-top:3px;}
 
   /* expanded */
   .expand{border-top:1px solid var(--border); padding:12px 13px 14px 13px; display:none;}
@@ -133,6 +146,9 @@
   .snapshot-col h4{font-size:12px; margin:0 0 6px 0; display:flex; align-items:center; gap:6px;}
   .snapshot-col .stat{display:flex; justify-content:space-between; font-size:12px; padding:2px 0; color:var(--dim);}
   .snapshot-col .stat b{color:var(--text); font-weight:600;}
+  .snapshot-col .stat.prior, .snapshot-col .stat.prior b{color:var(--amber);}
+  .prior-note{background:var(--amber-bg); border:1px solid var(--amber); color:var(--text); border-radius:10px; padding:7px 10px; font-size:12px; margin-bottom:12px; line-height:1.4;}
+  .prior-chip{font-size:10px; font-weight:700; letter-spacing:.3px; color:var(--amber); background:var(--amber-bg); border:1px solid var(--amber); border-radius:20px; padding:1px 7px; margin-left:6px; vertical-align:middle; white-space:nowrap;}
   .form-dots{display:flex; gap:3px;}
   .form-dot{width:15px; height:15px; border-radius:50%; font-size:8px; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;}
   .form-dot.W{background:var(--green);} .form-dot.D{background:var(--dim);} .form-dot.L{background:var(--red);}
@@ -142,6 +158,61 @@
   .h2h-last5{display:flex; flex-wrap:wrap; gap:5px;}
   .h2h-chip{background:var(--card); border:1px solid var(--border); border-radius:6px; padding:2px 6px; font-size:10.5px;}
   .h2h-venue{display:inline-block; font-size:9px; font-weight:800; letter-spacing:.02em; padding:1px 5px; border-radius:8px; margin-right:5px; background:var(--chip-bg); border:1px solid var(--border); color:var(--dim);}
+
+
+  /* League Standings (Carlos, 2026-10-06) -- one collapsible box per fixture card with the
+     table(s) of the group(s) the two teams are in (several only when home and away sit in
+     different groups, e.g. MLS conferences). Both teams' rows are highlighted; the left
+     edge of the rank cell carries a zone stripe (promotion/Europe = green, playoffs/next
+     round = accent, relegation = red) taken from the API's own `description` text. */
+  .stand-box{background:var(--chip-bg); border-radius:10px; padding:9px 10px; margin-bottom:12px; font-size:12px;}
+  .stand-box > summary{cursor:pointer; list-style:none; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;}
+  .stand-box > summary::-webkit-details-marker{display:none;}
+  .stand-box > summary::before{content:'\25B8'; color:var(--dim); font-size:11px;}
+  .stand-box[open] > summary::before{content:'\25BE';}
+  .stand-sum{color:var(--dim); font-size:11px;}
+  .stand-sum b{color:var(--text); font-weight:700;}
+  .stand-body{margin-top:6px;}
+  .stand-group{font-size:11px; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:.03em; margin:8px 0 4px 0;}
+  .stand-group:first-child{margin-top:0;}
+  .stand-scroll{max-height:330px; overflow:auto; border-radius:8px;}
+  table.stand{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:11.5px;}
+  .stand th{position:sticky; top:0; z-index:1; background:var(--chip-bg); color:var(--dim); font-size:9.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; text-align:right; padding:3px 4px;}
+  .stand th.l, .stand td.l{text-align:left;}
+  .stand td{padding:3px 4px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--border);}
+  .stand tr:last-child td{border-bottom:none;}
+  .stand td.rk{width:22px; border-left:4px solid transparent; color:var(--dim);}
+  .stand td.tm{width:100%; max-width:0; overflow:hidden; text-overflow:ellipsis;}
+  .stand .tmw{display:flex; align-items:center; gap:5px; min-width:0;}
+  .stand .tmw > span:last-child{overflow:hidden; text-overflow:ellipsis;}
+  .stand td.pts{font-weight:700;}
+  .stand tr.me td{background:var(--accent-dim); font-weight:700; color:var(--text);}
+  .stand tr.me td.rk{color:var(--text);}
+  .stand tr.z-good td.rk{border-left-color:var(--green);}
+  .stand tr.z-mid td.rk{border-left-color:var(--accent);}
+  .stand tr.z-bad td.rk{border-left-color:var(--red);}
+  .stand tr.z-warn td.rk{border-left-color:var(--amber);}
+  .stand tr.z-good td.rk{color:var(--green); font-weight:700;} .stand tr.z-mid td.rk{color:var(--accent); font-weight:700;} .stand tr.z-bad td.rk{color:var(--red); font-weight:700;} .stand tr.z-warn td.rk{color:var(--amber); font-weight:700;}
+  .stand-chips{display:flex; flex-direction:column; gap:4px; margin:0 0 8px 0;}
+  .stand-chip{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; font-size:11.5px; padding:4px 8px; border-radius:8px; border:1px solid var(--border); background:var(--card);}
+  .stand-chip b{font-weight:700;}
+  .stand-chip .zt{font-weight:700;}
+  .stand-chip.z-good{border-color:var(--green);} .stand-chip.z-good .zt{color:var(--green);}
+  .stand-chip.z-mid{border-color:var(--accent);} .stand-chip.z-mid .zt{color:var(--accent);}
+  .stand-chip.z-bad{border-color:var(--red);} .stand-chip.z-bad .zt{color:var(--red);}
+  .stand-chip.z-warn{border-color:var(--amber);} .stand-chip.z-warn .zt{color:var(--amber);}
+  .stand-chip.z-none .zt{color:var(--dim); font-weight:600;}
+  .zdot{display:inline-block; width:8px; height:8px; border-radius:50%; margin:0 3px 0 2px; vertical-align:baseline;}
+  .zdot.z-good{background:var(--green);} .zdot.z-mid{background:var(--accent);} .zdot.z-bad{background:var(--red);} .zdot.z-warn{background:var(--amber);}
+  .stand-alt{margin-top:10px; border-top:1px solid var(--border); padding-top:6px;}
+  .stand-alt > summary{cursor:pointer; font-size:11px; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:.03em; list-style:none;}
+  .stand-alt > summary::-webkit-details-marker{display:none;}
+  .stand-alt > summary::before{content:'\25B8 '; } .stand-alt[open] > summary::before{content:'\25BE ';}
+  .stand-alt-item{margin-top:6px;} .stand-alt-item > summary{cursor:pointer; font-size:11.5px; font-weight:600; color:var(--text);}
+  .stand-legend{display:flex; flex-wrap:wrap; gap:3px 12px; margin-top:6px; font-size:10px; color:var(--dim);}
+  .stand-legend i{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; vertical-align:baseline;}
+  .stand-legend i.z-good{background:var(--green);} .stand-legend i.z-mid{background:var(--accent);} .stand-legend i.z-bad{background:var(--red);} .stand-legend i.z-warn{background:var(--amber);}
+  .stand-asof{margin-top:5px; font-size:10px; color:var(--dim);}
 
   /* Per-team "last 10 results" cards -- reuses .moves-row/.moves-overview for the
      stack-on-phone/side-by-side-at-480px card layout and .form-dot for the W/D/L chip,
@@ -156,6 +227,10 @@
   .last10-opp span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .last10-score{flex:none; font-variant-numeric:tabular-nums; font-weight:600; width:34px; text-align:center;}
   .last10-empty{font-size:11px; color:var(--dim);}
+  .l10-toggle{display:inline-flex; border:1px solid var(--border); border-radius:20px; overflow:hidden; margin-bottom:8px;}
+  .l10-toggle button{background:transparent; color:var(--dim); border:0; padding:3px 12px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit;}
+  .l10-toggle button + button{border-left:1px solid var(--border);}
+  .l10-toggle button.on{background:var(--accent); color:#fff;}
   .injuries-list{display:flex; flex-direction:column; gap:2px;}
   .injuries-item{display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:3px 0; border-bottom:1px solid var(--border); font-size:11.5px;}
   .injuries-item:last-child{border-bottom:none;}
@@ -232,6 +307,13 @@
   .relbet-sub{color:var(--dim); font-size:10.5px; margin-top:2px;}
   .relbet-meta{display:flex; align-items:center; gap:8px; margin-top:5px; font-size:11.5px; color:var(--dim);}
   .relbet-meta .relbet-odds, .relbet-meta .relbet-stake{font-weight:600; color:var(--text);}
+  /* League History card (Fixtures tab, above Related Bets): the Performance tab's hero tiles / chart / table,
+     scaled down to sit inside an expanded fixture card. */
+  .league-history-box .tsum{margin-bottom:10px;}
+  .league-history-box .tsum .box{padding:7px 6px;}
+  .league-history-box .tsum .box .n{font-size:15px;}
+  .league-history-box .tr-chart-wrap{margin-bottom:10px;}
+  .league-history-box .perf-bd-section{margin-bottom:0;}
   .related-bets-more{font-size:10.5px; color:var(--dim); text-align:center; margin-top:6px;}
   .combo-chip{
     display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase;
@@ -300,6 +382,20 @@
     .moves-item{gap:3px;}
     .moves-item .mi-label{width:40px; font-size:9.5px;}
   }
+  /* Carlos, 2026-10-07: Team Total prices ("1.5 -159 ~~ 1.5 -200") were clipped in the Line
+     Moves card because the two boxes were forced side by side at any width >= 480px. Line
+     Moves only: boxes now wrap onto their own full-width line unless there is room for both
+     at >= 340px each, and the table gets roomier columns/type. (Scoped via .lm-moves so the
+     Last 10 cards, which share .moves-row, keep their layout.) */
+  .moves-row.lm-moves{flex-direction:row; flex-wrap:wrap; gap:8px;}
+  .moves-row.lm-moves .moves-overview{flex:1 1 340px; min-width:0;}
+  .moves-row.lm-moves .moves-table{grid-template-columns:fit-content(110px) minmax(0,1fr) minmax(0,1.3fr); column-gap:10px;}
+  .moves-row.lm-moves .moves-table .mt-team{font-size:11.5px;}
+  .moves-row.lm-moves .moves-table .mt-head{font-size:10px;}
+  .moves-row.lm-moves .mt-cell{gap:5px; flex-wrap:wrap;}
+  .moves-row.lm-moves .mt-cell .pm-val{font-size:12px;}
+  .moves-row.lm-moves .moves-item{gap:5px;}
+  .moves-row.lm-moves .moves-item .mi-label{width:58px; font-size:10.5px;}
   .track-btn{
     flex:none; border:1px solid var(--accent); color:var(--accent); background:none; border-radius:20px;
     font-size:11px; padding:4px 10px; cursor:pointer; font-weight:600; white-space:nowrap;
@@ -548,14 +644,14 @@
     .tcard .status-btn:not(.won):not(.lost):not(.push){ border-color:transparent; }
     .tcard input[type=number]{ border-color:transparent; }
     .market-odds-input, .h2h-chip{ border-color:transparent; }
-    .market-row, .last10-item, .relbet-item, .streak-row{ border-bottom-color:rgba(0,0,0,.08); }
+    .market-row, .last10-item, .relbet-item, .streak-row, .stand td{ border-bottom-color:rgba(0,0,0,.08); }
   }
   @media (max-width:479px) and (prefers-color-scheme:dark){
-    .market-row, .last10-item, .relbet-item, .streak-row{ border-bottom-color:rgba(43,227,255,.22); }
+    .market-row, .last10-item, .relbet-item, .streak-row, .stand td{ border-bottom-color:rgba(43,227,255,.22); }
   }
   @media (max-width:479px){
-    :root[data-theme="light"] .market-row, :root[data-theme="light"] .last10-item, :root[data-theme="light"] .relbet-item, :root[data-theme="light"] .streak-row{ border-bottom-color:rgba(0,0,0,.08); }
-    :root[data-theme="dark"] .market-row, :root[data-theme="dark"] .last10-item, :root[data-theme="dark"] .relbet-item, :root[data-theme="dark"] .streak-row{ border-bottom-color:rgba(43,227,255,.22); }
+    :root[data-theme="light"] .market-row, :root[data-theme="light"] .last10-item, :root[data-theme="light"] .relbet-item, :root[data-theme="light"] .streak-row, :root[data-theme="light"] .stand td{ border-bottom-color:rgba(0,0,0,.08); }
+    :root[data-theme="dark"] .market-row, :root[data-theme="dark"] .last10-item, :root[data-theme="dark"] .relbet-item, :root[data-theme="dark"] .streak-row, :root[data-theme="dark"] .stand td{ border-bottom-color:rgba(43,227,255,.22); }
   }
   /* ---------- Fixtures tab: desktop (>=1100px) layout ----------
      Carlos, 2026-09-21, approved (v1): filters sidebar + compact fixture list + one
@@ -818,7 +914,7 @@
     <div class="card calc-card">
       <div class="calc-head">Odds Calculator</div>
       <div class="calc-sub">Type in either field -- the other updates live.</div>
-      <label class="np-field">American (moneyline)<input type="number" step="1" id="calc-american" placeholder="-150" inputmode="numeric"></label>
+      <label class="np-field">American (moneyline)<input type="number" step="1" id="calc-american" placeholder="-150"></label>
       <label class="np-field">Decimal<input type="number" step="0.01" id="calc-decimal" placeholder="1.67" inputmode="decimal"></label>
       <div class="calc-implied" id="calc-implied"></div>
     </div>
@@ -886,6 +982,8 @@
   // fresh on every syncFromServer() call -- see liveScoreChipHtml() below for how
   // the two are combined.
   var PREVIOUS_SCORES = DATA.previousScores || {};
+  // League standings tables shared across fixtures (push_soccer_tracker_v6.py _attach_standings); fx.standingsKeys points into this.
+  var STANDINGS = (DATA.standings && DATA.standings.tables) || {};
 
   // ---- theme (light/dark toggle, localStorage, per browser; overrides system default) ----
   var THEME_KEY = 'matchDayTheme_v1';
@@ -1144,7 +1242,7 @@
         '</div>';
     }
     if (!box1 && !box2) return '';
-    return '<div class="moves-row">'+box1+box2+'</div>';
+    return '<div class="moves-row lm-moves">'+box1+box2+'</div>';
   }
 
   // Live current-market odds for a trackable market, straight from the API pull the
@@ -1190,6 +1288,22 @@
     return o.odds != null && !isNaN(o.odds);
   }
 
+  // Value-edge ("Possible mispricing") note, parsed from the reason string the backend already
+  // ships (evaluate_value_edge() appends it as one ' | '-separated segment). Returns the
+  // reason with that segment removed, the segment itself, and the pt gap.
+  function veSplit(reason){
+    var s = reason ? String(reason) : '';
+    if (s.indexOf('Possible mispricing') === -1) return {rest:s, note:null, gap:null};
+    var note = null, rest = [];
+    s.split(' | ').forEach(function(p){ if (p.indexOf('Possible mispricing') !== -1) note = p; else rest.push(p); });
+    var m = note && note.match(/(\d+)pt gap/);
+    var mp = note && note.match(/model ~?(\d+)%[^v]*vs live-price-implied ~?(\d+)%/);
+    return {rest:rest.join(' | '), note:note, gap:m ? parseInt(m[1],10) : null, model:mp ? mp[1] : null, implied:mp ? mp[2] : null};
+  }
+  function veChipHtml(ve){
+    return '<span class="ve-chip" title="'+esc(ve.note||'')+'">💡 '+(ve.gap != null ? '+'+ve.gap+'pt' : 'edge')+(ve.model != null ? '<span class="ve-det"> \u00B7 '+ve.model+'% vs '+ve.implied+'%</span>' : '')+'</span>';
+  }
+
   function marketRowHtml(fx, marketKey, side, pick, label){
     var trackId = fx.id + '::' + marketKey + (side?('::'+side):'');
     var tracked = isTracked(trackId);
@@ -1220,10 +1334,11 @@
       'title="'+esc(oddsTitle)+'" data-oddsinput="'+esc(trackId)+'" value="'+(oddsVal!=null?esc(String(oddsVal)):'')+'">';
     var parlayLegChip = isParlayLegEligible(fx, marketKey, side, pick)
       ? ' <span class="parlay-leg-chip" title="Would clear the Parlay tab\'s current min-confidence floor -- good parlay-leg material even when this is not the fixture\'s Best Bet">Parlay Leg</span>' : '';
-    return '<div class="market-row">'+labelHtml+
+    var ve = veSplit(pick.reason);
+    return '<div class="market-row'+(ve.note ? ' ve-row' : '')+'">'+labelHtml+
       '<div class="body">'+
-        '<span class="rec">'+esc(pick.rec)+'</span> <span class="stars">'+esc(stars(pick.stars))+'</span>'+parlayLegChip+
-        (pick.reason ? '<div class="reason">'+esc(pick.reason)+'</div>' : '')+
+        '<span class="rec">'+esc(pick.rec)+'</span> <span class="stars">'+esc(stars(pick.stars))+'</span>'+parlayLegChip+(ve.note ? veChipHtml(ve) : '')+
+        (ve.rest ? '<div class="reason">'+esc(ve.rest)+'</div>' : '')+
         moveLineHtml(fx, marketKey, side, pick)+
       '</div>'+
       '<div class="market-actions">'+
@@ -1374,6 +1489,153 @@
     return '<span class="h2h-chip"><span class="h2h-venue" title="'+(m[1]==='H'?'Home team was at home':'Home team was away')+'">'+m[1]+'</span>'+esc(m[2])+'</span>';
   }
 
+
+  // ---- League Standings box (Carlos, 2026-10-06: "could we please add the League
+  // Standings? ... the league has groups or sub-leagues, so we need to account for that").
+  // Row layout from the backend: [rank, team_id, name, logo|null, played, win, draw, lose,
+  // gf, ga, gd, pts, descIdx(-1 none), form]. Zone stripe colors come from keywords in the
+  // API's own description text (it varies by league/language, so this is best-effort and
+  // anything unrecognized simply gets no stripe).
+  function standingZone(desc){
+    var d = String(desc||'').toLowerCase();
+    if (!d) return '';
+    // amber: put into a relegation group / relegation play-off / play-out -- in danger, not yet relegated
+    if (/relegation (group|round|play)|relegation - play|play[- ]?outs?/.test(d)) return 'warn';
+    // red: relegation spot
+    if (/relegat|demot|eliminat/.test(d)) return 'bad';
+    // blue: play-offs / qualifying rounds / knockout rounds / ranking of 2nd-placed sides
+    if (/play[- ]?offs?|qualif|quadrangular|quarter|semi|\bfinals?\b|second-placed|ranking|third place|1\/\d+-finals|placement|possible/.test(d)) return 'mid';
+    // green: promotion, direct European / continental spots, advancing
+    if (/promotion|champions league|libertadores|europa league|conference league|sudamericana|knockout|next round|league stage|league phase|group stage|champion|title/.test(d)) return 'good';
+    return '';
+  }
+  // "Promotion - Champions League (Group Stage: )" -> "Promotion - Champions League (Group Stage)"
+  function cleanZoneDesc(d){ return String(d||'').replace(/:\s*\)/g, ')').replace(/\(\s*\)/g, '').replace(/\s+/g,' ').trim(); }
+  // {rank, desc, zone, ...} for one team in this fixture's table(s), or null.
+  function standingTeamInfo(fx, teamId){
+    var keys = fx.standingsKeys || [];
+    for (var i=0;i<keys.length;i++){
+      var t = STANDINGS[keys[i]]; if (!t) continue;
+      for (var j=0;j<t.rows.length;j++){
+        var r = t.rows[j];
+        if (r[1] === Number(teamId)) {
+          var d = r[12] >= 0 ? cleanZoneDesc(t.descs[r[12]]) : '';
+          return {rank:r[0], desc:d, zone:standingZone(d), group:t.name, nGroups:t.nGroups, pts:r[11], played:r[4]};
+        }
+      }
+    }
+    return null;
+  }
+  function standingRankIn(key, teamId){
+    var t = STANDINGS[key]; if (!t) return null;
+    for (var i=0;i<t.rows.length;i++){ if (t.rows[i][1] === teamId) return t.rows[i][0]; }
+    return null;
+  }
+  function shortGroupName(n){ var m = String(n||'').match(/^[^:]+:\s*(.+)$/); return m ? m[1] : String(n||''); }
+  function standingTableHtml(key, fx, noHead){
+    var t = STANDINGS[key];
+    if (!t || !t.rows || !t.rows.length) return '';
+    var hid = Number(fx.home_team_id), aid = Number(fx.away_team_id);
+    var zones = (t.descs||[]).map(standingZone);
+    function n(v){ return v==null ? '–' : v; }
+    var body = t.rows.map(function(r){
+      var me = (r[1]===hid || r[1]===aid);
+      var z = r[12] >= 0 ? zones[r[12]] : '';
+      var logo = r[3] || ('https://media.api-sports.io/football/teams/'+r[1]+'.png');
+      var gd = r[10];
+      var gdTxt = gd==null ? '–' : (gd>0 ? '+'+gd : String(gd));
+      var title = (r[12] >= 0 && t.descs[r[12]]) ? ' title="'+esc(cleanZoneDesc(t.descs[r[12]]))+'"' : '';
+      return '<tr class="'+(me?'me':'')+(z?' z-'+z:'')+'">'+
+        '<td class="rk l"'+title+'>'+n(r[0])+'</td>'+
+        '<td class="tm l"><span class="tmw">'+badge(r[2], logo, 'sm')+'<span>'+esc(r[2])+'</span></span></td>'+
+        '<td>'+n(r[4])+'</td><td>'+n(r[5])+'</td><td>'+n(r[6])+'</td><td>'+n(r[7])+'</td>'+
+        '<td>'+gdTxt+'</td><td class="pts">'+n(r[11])+'</td>'+
+      '</tr>';
+    }).join('');
+    var head = (!noHead && t.nGroups > 1 && t.name) ? '<div class="stand-group">'+esc(shortGroupName(t.name))+'</div>' : '';
+    return head+
+      '<div class="stand-scroll"><table class="stand"><thead><tr>'+
+        '<th class="l">#</th><th class="l">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>'+
+      '</tr></thead><tbody>'+body+'</tbody></table></div>';
+  }
+  function standingsLegendHtml(keys){
+    var seen = {}, legend = [];
+    keys.forEach(function(k){
+      var t = STANDINGS[k]; if (!t) return;
+      t.rows.forEach(function(r){
+        if (r[12] < 0) return;
+        var d = t.descs[r[12]], z = standingZone(d);
+        if (z && !seen[d]) { seen[d] = 1; legend.push('<span><i class="z-'+z+'"></i>'+esc(cleanZoneDesc(d))+'</span>'); }
+      });
+    });
+    return legend.length ? '<div class="stand-legend">'+legend.join('')+'</div>' : '';
+  }
+  function standingsBodyHtml(fx){
+    var keys = fx.standingsKeys || [];
+    var tables = keys.map(function(k){ return standingTableHtml(k, fx); }).filter(Boolean);
+    if (!tables.length) return '';
+    function chip(teamName, teamId){
+      var inf = standingTeamInfo(fx, teamId);
+      if (!inf) return '';
+      var cls = inf.zone ? 'z-'+inf.zone : 'z-none';
+      var label = inf.desc || 'No qualification / relegation spot';
+      var grp = (inf.nGroups > 1 && inf.group) ? ' <span class="stand-sum">'+esc(shortGroupName(inf.group))+'</span>' : '';
+      return '<div class="stand-chip '+cls+'"><b>'+esc(teamName)+'</b><span>#'+(inf.rank!=null?inf.rank:'\u2013')+'</span><span class="zt">'+esc(label)+'</span>'+grp+'</div>';
+    }
+    var chips = chip(fx.home, fx.home_team_id) + chip(fx.away, fx.away_team_id);
+    var asOf = (STANDINGS[keys[0]] || {}).asOf;
+    // Other tables of the same league that also hold one of the teams (Tabla Anual, an earlier
+    // Period, the regular-season table behind a Championship Group...) -- collapsed, each one opens separately.
+    var alts = (fx.standingsAlt || []).filter(function(k){ return STANDINGS[k]; });
+    var altHtml = alts.length
+      ? '<details class="stand-alt"><summary>Other tables ('+alts.length+')</summary>'+
+          alts.map(function(k){
+            var t = STANDINGS[k];
+            return '<details class="stand-alt-item"><summary>'+esc(shortGroupName(t.name || 'Table'))+'</summary>'+
+              standingTableHtml(k, fx, true)+standingsLegendHtml([k])+'</details>';
+          }).join('')+
+        '</details>'
+      : '';
+    return '<div class="stand-body">'+(chips ? '<div class="stand-chips">'+chips+'</div>' : '')+tables.join('')+
+      standingsLegendHtml(keys)+
+      (asOf ? '<div class="stand-asof">Standings updated '+esc(fmtDayMDY(asOf))+' \u00b7 P = played, GD = goal difference</div>' : '')+
+      altHtml+
+    '</div>';
+  }
+  // bare=true -> just the body (the desktop panel wraps it in collapsibleSection()); otherwise a
+  // native <details> (no ids, so a fixture rendered in both Top Picks and Fixtures stays safe).
+  function standingsHtml(fx, bare){
+    var body = standingsBodyHtml(fx);
+    if (!body) return '';
+    if (bare) return body;
+    var keys = fx.standingsKeys || [];
+    function rankOf(id){
+      for (var i=0;i<keys.length;i++){ var r = standingRankIn(keys[i], Number(id)); if (r != null) return r; }
+      return null;
+    }
+    var hr = rankOf(fx.home_team_id), ar = rankOf(fx.away_team_id);
+    function zdotHtml(id){ var inf = standingTeamInfo(fx, id); return (inf && inf.zone) ? '<i class="zdot z-'+inf.zone+'" title="'+esc(inf.desc)+'"></i>' : ''; }
+    var sum = (hr!=null || ar!=null)
+      ? '<span class="stand-sum"><b>'+(hr!=null?'#'+hr:'\u2013')+'</b>'+zdotHtml(fx.home_team_id)+' '+esc(fx.home)+' \u00b7 <b>'+(ar!=null?'#'+ar:'\u2013')+'</b>'+zdotHtml(fx.away_team_id)+' '+esc(fx.away)+'</span>'
+      : '';
+    return '<details class="stand-box"><summary><b>League Standings</b>'+sum+'</summary>'+body+'</details>';
+  }
+  // Scroll each standings table so the first highlighted (playing) team is in view -- a
+  // 20-team table is taller than the box. Runs when a box is opened / a panel is rendered.
+  function focusStandings(root){
+    var scope = root || document;
+    var boxes = scope.querySelectorAll ? scope.querySelectorAll('.stand-scroll') : [];
+    Array.prototype.forEach.call(boxes, function(sc){
+      if (!sc.offsetParent) return;           // hidden (collapsed) -> nothing to measure
+      var me = sc.querySelector('tr.me'); if (!me) return;
+      sc.scrollTop = Math.max(0, me.offsetTop - 44);
+    });
+  }
+  document.addEventListener('toggle', function(e){
+    var d = e.target;
+    if (d && d.classList && d.classList.contains('stand-box') && d.open) focusStandings(d);
+  }, true);
+
   function snapshotHtml(fx){
     var snap = fx.snapshot || {};
     var h = snap.home || {}, a = snap.away || {};
@@ -1387,13 +1649,18 @@
         '<div class="stat" style="margin-top:4px;">GF/GA <b>'+(s.gFor!=null?s.gFor:'–')+' / '+(s.gAgainst!=null?s.gAgainst:'–')+'</b></div>'+
         '<div class="stat">xG <b>'+(s.xg!=null?s.xg:'–')+'</b></div>'+
         '<div class="stat">Played <b>'+(s.played!=null?s.played:'–')+'</b></div>'+
+        (s.priorSeason>0 ? '<div class="stat prior" title="Too few games this season at this venue yet, so older games (previous season) are included in these stats">Prior-season games <b>'+s.priorSeason+' of '+s.played+'</b></div>' : '')+
       '</div>';
     }
     var h2h = snap.h2h || {};
     var h2hHtml = '<div class="h2h-box"><div class="row1"><span>H2H played: <b>'+(h2h.played!=null?h2h.played:'0')+'</b></span><span>Avg goals: <b>'+(h2h.avgGoals!=null?h2h.avgGoals:'–')+'</b></span><span>BTTS: <b>'+(h2h.bttsPct!=null?h2h.bttsPct+'%':'–')+'</b></span></div>'+
       (h2h.last5 && h2h.last5.length ? '<div class="h2h-last5">'+h2h.last5.map(h2hChipHtml).join('')+'</div>' : '<div style="font-size:11px;color:var(--dim);">No recent meetings on record</div>')+
     '</div>';
-    return '<div class="snapshot-grid">'+col(fx.home, h, fx.homeLogo)+col(fx.away, a, fx.awayLogo)+'</div>' + h2hHtml;
+    var priorTeams = [];
+    if (h.priorSeason>0) priorTeams.push(fx.home+' ('+h.priorSeason+' of '+h.played+' games)');
+    if (a.priorSeason>0) priorTeams.push(fx.away+' ('+a.priorSeason+' of '+a.played+' games)');
+    var priorNote = priorTeams.length ? '<div class="prior-note">⚠ <b>Prior-season stats in use:</b> '+esc(priorTeams.join(' and '))+'. These teams don\'t have enough games this season at this venue yet, so games from the previous season are included. Treat the numbers below with extra caution.</div>' : '';
+    return '<div class="snapshot-grid">'+col(fx.home, h, fx.homeLogo)+col(fx.away, a, fx.awayLogo)+'</div>' + priorNote + h2hHtml;
   }
 
   // ---- per-team "last 10 results" (any opponent, not head-to-head) -- added alongside
@@ -1412,23 +1679,72 @@
       '</div>';
   }
 
-  function last10CardHtml(teamName, teamLogo, items){
-    var body = (items && items.length)
-      ? '<div class="last10-list">'+items.map(last10ItemHtml).join('')+'</div>'
-      : '<div class="last10-empty">No recent results</div>';
+  // Home / Away / Both venue filter for the Last 10 cards (Carlos, 2026-10-06). One choice
+  // for the whole page, remembered per browser. The backend sends each team's latest 10 games
+  // overall PLUS its latest 10 at each venue, so a venue view shows a full 10 whenever the
+  // team has that many.
+  var L10_KEY = 'matchDayLast10Venue_v2';
+  // Separate choice for the home-side card and the away-side card (Carlos, 2026-10-06: compare
+  // one team's home form with the other's away form), remembered per browser.
+  var l10Venue = (function(){
+    var d = {home:'both', away:'both'};
+    try {
+      var o = JSON.parse(localStorage.getItem(L10_KEY) || 'null') || {};
+      ['home','away'].forEach(function(k){ if (o[k]==='home' || o[k]==='away') d[k] = o[k]; });
+    } catch(e){}
+    return d;
+  })();
+  var L10_LABEL = {both:'', home:' (home games)', away:' (away games)'};
+
+  function last10Pick(items, mode){
+    items = items || [];
+    if (mode === 'home') return items.filter(function(i){ return i.isHome; }).slice(0, 10);
+    if (mode === 'away') return items.filter(function(i){ return !i.isHome; }).slice(0, 10);
+    return items.slice(0, 10);
+  }
+
+  function last10CardHtml(teamName, teamLogo, items, side){
+    var mode = l10Venue[side] || 'both';
+    var shown = last10Pick(items, mode);
+    var emptyMsg = mode === 'both' ? 'No recent results' : 'No recent '+mode+' results';
+    function btn(v, label){ return '<button type="button" data-l10="'+side+':'+v+'" class="'+(mode===v?'on':'')+'">'+label+'</button>'; }
+    var body = shown.length
+      ? '<div class="last10-list">'+shown.map(last10ItemHtml).join('')+'</div>'
+      : '<div class="last10-empty">'+emptyMsg+'</div>';
     return '<div class="moves-overview last10-card">'+
-        '<h4>'+badge(teamName, teamLogo, 'sm')+' '+esc(teamName)+' – Last 10</h4>'+
+        '<h4>'+badge(teamName, teamLogo, 'sm')+' '+esc(teamName)+' – Last '+(shown.length && shown.length<10 ? shown.length : 10)+esc(L10_LABEL[mode])+'</h4>'+
+        '<div class="l10-toggle">'+btn('both','Both')+btn('home','Home')+btn('away','Away')+'</div>'+
         body+
       '</div>';
   }
 
-  function last10Html(fx){
+  function last10Inner(fx){
     var snap = fx.snapshot || {};
     var h = snap.home || {}, a = snap.away || {};
     return '<div class="moves-row">'+
-        last10CardHtml(fx.home, fx.homeLogo, h.last10 || [])+
-        last10CardHtml(fx.away, fx.awayLogo, a.last10 || [])+
+        last10CardHtml(fx.home, fx.homeLogo, h.last10 || [], 'home')+
+        last10CardHtml(fx.away, fx.awayLogo, a.last10 || [], 'away')+
       '</div>';
+  }
+
+  function last10Html(fx){
+    return '<div class="l10-wrap" data-l10fx="'+esc(fx.id)+'">'+last10Inner(fx)+'</div>';
+  }
+
+  function setLast10Venue(side, v){
+    if (side !== 'home' && side !== 'away') return;
+    l10Venue[side] = (v==='home'||v==='away') ? v : 'both';
+    try { localStorage.setItem(L10_KEY, JSON.stringify(l10Venue)); } catch(e){}
+    document.querySelectorAll('.l10-wrap').forEach(function(w){
+      var id = w.getAttribute('data-l10fx');
+      var fx = FIXTURES.filter(function(f){ return String(f.id) === id; })[0];
+      if (fx) w.innerHTML = last10Inner(fx);
+    });
+    document.querySelectorAll('.streaks-wrap').forEach(function(w){
+      var id = w.getAttribute('data-streakfx');
+      var fx = FIXTURES.filter(function(f){ return String(f.id) === id; })[0];
+      if (fx) w.innerHTML = streaksInner(fx);
+    });
   }
 
   // ---- per-team current injuries for THIS fixture (soccer.injuries, via
@@ -1616,16 +1932,28 @@
     return full;
   }
 
+  // The games a team's streaks are computed from: whatever its Last 10 card currently shows.
+  function streakItems(fx, side){
+    var raw = (((fx.snapshot || {})[side]) || {}).last10 || [];
+    return last10Pick(raw, l10Venue[side] || 'both');
+  }
+  var STREAK_VENUE_TAG = {both:'', home:' (home)', away:' (away)'};
+
   function teamStreakEntries(fx, side){
     var teamName = side === 'home' ? fx.home : fx.away;
     var teamLogo = side === 'home' ? fx.homeLogo : fx.awayLogo;
     var snap = (fx.snapshot || {})[side] || {};
-    var items = snap.last10 || [];
+    // The backend sends up to 20 games per team (latest 10 overall PLUS latest 10 at each venue, newest
+    // first). Streaks use exactly the games the Last 10 card is showing -- that team's Both / Home / Away
+    // choice (Carlos, 2026-10-24: "we make the selectors affect both sections") -- so never more than 10
+    // (2026-10-23: "Team Total Over 1 5/20").
+    var items = streakItems(fx, side);
     if (items.length < 3) return []; // too little history for a meaningful read
 
     var out = [];
     function push(label, value, opts){
       opts = opts || {};
+      label = label + (STREAK_VENUE_TAG[l10Venue[opts.teamSide || side] || 'both'] || '');
       out.push({team: opts.team||teamName, logo: opts.logo||teamLogo, label: label, value: value, tone: opts.tone||'', relevant: !!opts.relevant, weight: opts.weight||0});
     }
 
@@ -1688,12 +2016,13 @@
       if (ttHit) push('Team Total '+ttDir+' '+ttLine.text, ttHit.hits+'/'+ttHit.total, {relevant:ttRelevant, weight:4});
 
       var otherSide = side === 'home' ? 'away' : 'home';
-      var oppItems = ((fx.snapshot||{})[otherSide]||{}).last10 || [];
+      var oppItems = streakItems(fx, otherSide);   // the opponent's own selector decides which of its games count
       if (oppItems.length >= 3) {
         var oppConceded = recentDivergentRate(oppItems, function(it){ return ttDir === 'Under' ? it.scoreAgainst < ttLine.num : it.scoreAgainst > ttLine.num; });
         if (oppConceded) push('Conceded '+ttDir+' '+ttLine.text, oppConceded.hits+'/'+oppConceded.total, {
           team: otherSide === 'home' ? fx.home : fx.away,
           logo: otherSide === 'home' ? fx.homeLogo : fx.awayLogo,
+          teamSide: otherSide,
           relevant: ttRelevant, weight: 3.5
         });
       }
@@ -1719,26 +2048,34 @@
   // actually ABOUT (e.team), not by which teamStreakEntries() call produced them, since
   // the "Conceded" entries are generated during the opposing side's call but describe
   // THIS team's own defense.
-  function streakCardHtml(teamName, teamLogo, entries){
+  function streakCardHtml(teamName, teamLogo, entries, side){
     entries = entries.slice().sort(function(a,b){ return (b.relevant - a.relevant) || (b.weight - a.weight); }).slice(0, STREAKS_SHOW_MAX);
     var body = entries.length
       ? '<div class="streak-list">'+entries.map(streakRowHtml).join('')+'</div>'
       : '<div class="last10-empty">Not enough recent history</div>';
     return '<div class="moves-overview streaks-box">'+
-        '<h4>'+badge(teamName, teamLogo, 'sm')+' '+esc(teamName)+' – Streaks</h4>'+
+        '<h4>'+badge(teamName, teamLogo, 'sm')+' '+esc(teamName)+' – Streaks'+esc(L10_LABEL[l10Venue[side] || 'both'] || '')+'</h4>'+
         body+
       '</div>';
   }
 
-  function streaksHtml(fx){
+  function streaksInner(fx){
     var entries = teamStreakEntries(fx, 'home').concat(teamStreakEntries(fx, 'away'));
-    if (!entries.length) return '';
     var homeEntries = entries.filter(function(e){ return e.team === fx.home; });
     var awayEntries = entries.filter(function(e){ return e.team === fx.away; });
     return '<div class="moves-row">'+
-        streakCardHtml(fx.home, fx.homeLogo, homeEntries)+
-        streakCardHtml(fx.away, fx.awayLogo, awayEntries)+
+        streakCardHtml(fx.home, fx.homeLogo, homeEntries, 'home')+
+        streakCardHtml(fx.away, fx.awayLogo, awayEntries, 'away')+
       '</div>';
+  }
+
+  // Wrapped so setLast10Venue() can re-render it when a Both/Home/Away button is clicked. The section
+  // itself only exists when there is any history at all (same rule as before: 3+ games for a team).
+  function streaksHtml(fx){
+    var snap = fx.snapshot || {};
+    var hn = ((snap.home || {}).last10 || []).length, an = ((snap.away || {}).last10 || []).length;
+    if (hn < 3 && an < 3) return '';
+    return '<div class="streaks-wrap" data-streakfx="'+esc(fx.id)+'">'+streaksInner(fx)+'</div>';
   }
 
   function marketsHtml(fx){
@@ -1792,11 +2129,13 @@
     // already matches or beats every other market's stars keeps showing exactly as
     // before, unchanged.
     if (alt && alt.stars > bbStars) {
+      var vAlt = veSplit(alt.pick.reason);
       return '<div class="bb-line parlay-alt"><span class="stars">'+esc(stars(alt.stars))+'</span><span>'+esc(alt.pick.rec)+'</span>'+
-        '<span class="parlay-leg-chip" title="Priced too short for a straight Best Bet -- shown here as your strongest parlay-leg candidate for this game instead">Parlay Leg</span></div>';
+        '<span class="parlay-leg-chip" title="Priced too short for a straight Best Bet -- shown here as your strongest parlay-leg candidate for this game instead">Parlay Leg</span>'+(vAlt.note ? veChipHtml(vAlt) : '')+'</div>';
     }
     if (fx.best_bet && fx.best_bet.stars != null) {
-      return '<div class="bb-line"><span class="stars">'+esc(stars(fx.best_bet.stars))+'</span><span>'+esc(fx.best_bet.rec)+'</span></div>';
+      var vBb = veSplit(fx.best_bet.reason);
+      return '<div class="bb-line'+(vBb.note ? ' value-edge' : '')+'"><span class="stars">'+esc(stars(fx.best_bet.stars))+'</span><span>'+esc(fx.best_bet.rec)+'</span>'+(vBb.note ? veChipHtml(vBb) : '')+'</div>';
     }
     // PASS -- now that the backend keeps best_bet's reason instead of dropping the whole
     // object (Carlos, 2026-09-16: "why if there is a BTTS Bet Yes of 5 stars, the best
@@ -1840,6 +2179,113 @@
         '</div>'+
       '</div>';
   }
+  // "League History" card -- Carlos, 2026-10-27: "Above the Related Bets sections, could we add a
+  // section that shows the historical bet summary for the league? Similar to the performance
+  // add." The Performance tab's view (record / hit rate / net units, cumulative-units chart,
+  // By Bet Type table) scoped to THIS fixture's league, across every tracker and every past
+  // matchday. Pure front end over loadTracked(), same as Related Bets; profitFor() and
+  // comboBreakdownKey() are the Performance tab's own helpers, so the numbers can never disagree
+  // with it. Read-only. Pending picks count toward "Picks" but not toward record/units.
+  function leagueHistoryEntries(fx){
+    return loadTracked().filter(function(e){ return e.league && e.league === fx.league; });
+  }
+  function leagueHistoryChartHtml(arr){
+    var byDate = {};
+    arr.forEach(function(e){
+      if (!e.status || e.status === 'pending') return;
+      var d = e.date ? String(e.date).slice(0,10) : '';
+      if (!d) return;
+      byDate[d] = (byDate[d] || 0) + profitFor(e);
+    });
+    var dates = Object.keys(byDate).sort();
+    if (!dates.length) return '<div class="tr-chart-wrap"><div class="tr-chart-empty">No settled bets yet.</div></div>';
+    var cum = 0;
+    var pts = dates.map(function(d){ cum += byDate[d]; return {date:d, val:cum}; });
+    if (pts.length === 1) {
+      return '<div class="tr-chart-wrap"><div class="tr-chart-empty">'+esc(fmtDay(pts[0].date))+': '+fmtUnits(pts[0].val)+'u (only one day of activity)</div></div>';
+    }
+    var W=300, H=100, padL=4, padR=4, padT=8, padB=8;
+    var minTs = new Date(pts[0].date+'T12:00:00').getTime();
+    var maxTs = new Date(pts[pts.length-1].date+'T12:00:00').getTime();
+    var xSpan = Math.max(1, maxTs-minTs);
+    var vals = pts.map(function(p){ return p.val; });
+    var minV = Math.min(0, Math.min.apply(null, vals));
+    var maxV = Math.max(0, Math.max.apply(null, vals));
+    if (minV === maxV) { minV -= 1; maxV += 1; }
+    var padV = (maxV-minV)*0.1;
+    minV -= padV; maxV += padV;
+    function xPos(p){ var ts = new Date(p.date+'T12:00:00').getTime(); return padL + (ts-minTs)/xSpan*(W-padL-padR); }
+    function yPos(v){ return padT + (1-(v-minV)/(maxV-minV))*(H-padT-padB); }
+    var y0 = yPos(0);
+    var linePts = pts.map(function(p){ return xPos(p)+','+yPos(p.val); }).join(' ');
+    var lastVal = pts[pts.length-1].val;
+    var lineColor = lastVal >= 0 ? 'var(--green)' : 'var(--red)';
+    var areaPath = 'M'+xPos(pts[0])+','+y0+' L'+pts.map(function(p){return xPos(p)+','+yPos(p.val);}).join(' L')+' L'+xPos(pts[pts.length-1])+','+y0+' Z';
+    var svg = '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="tr-chart-svg">'+
+      '<line x1="'+padL+'" y1="'+y0+'" x2="'+(W-padR)+'" y2="'+y0+'" class="tr-chart-baseline"/>'+
+      '<path d="'+areaPath+'" fill="'+lineColor+'" opacity="0.15" stroke="none"/>'+
+      '<polyline points="'+linePts+'" fill="none" stroke="'+lineColor+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'+
+      '</svg>';
+    return '<div class="tr-chart-wrap"><div class="tr-chart-labels"><span>'+esc(fmtDay(pts[0].date))+'</span><span class="tr-chart-total">'+fmtUnits(lastVal)+'u</span><span>'+esc(fmtDay(pts[pts.length-1].date))+'</span></div>'+svg+'</div>';
+  }
+  function leagueHistoryHtml(fx){
+    var arr = leagueHistoryEntries(fx);
+    var boxClass = 'moves-overview league-history-box fx-section'+(isSectionCollapsed('leagueHistory')?' collapsed':'');
+    if (!arr.length) {
+      return '<div class="'+boxClass+'">'+
+          '<h4 class="fx-section-head" data-section-toggle="leagueHistory">League History<span class="fx-section-chevron">\u25BE</span></h4>'+
+          '<div class="fx-section-body"><div class="last10-empty">No tracked bets yet in '+esc(fx.league)+'</div></div>'+
+        '</div>';
+    }
+    var w=0, l=0, p=0, pending=0, units=0;
+    arr.forEach(function(e){
+      if (e.status==='won') w+=1;
+      else if (e.status==='half_won') w+=0.5;
+      else if (e.status==='lost') l+=1;
+      else if (e.status==='half_lost') l+=0.5;
+      else if (e.status==='push') p+=1;
+      else pending+=1;
+      units += profitFor(e);
+    });
+    function fmtRec(n){ return (n % 1 === 0) ? String(n) : n.toFixed(1); }
+    var decided = w+l;
+    var hero = '<div class="tsum perf-hero">'+
+      '<div class="box"><div class="n">'+fmtRec(w)+'-'+fmtRec(l)+'-'+fmtRec(p)+'</div><div class="l">Record</div></div>'+
+      '<div class="box"><div class="n">'+(decided ? Math.round(100*w/decided)+'%' : '\u2013')+'</div><div class="l">Hit rate</div></div>'+
+      '<div class="box"><div class="n">'+arr.length+(pending ? ' <span class="prop-sub">('+pending+' open)</span>' : '')+'</div><div class="l">Bets</div></div>'+
+      '<div class="box"><div class="n '+unitsClass(units)+'">'+fmtUnits(units)+'</div><div class="l">Net units</div></div>'+
+    '</div>';
+    // By Bet Type -- same grouping (Custom split into combo/single) and net-units-descending order as the Performance tab
+    var byKey = {};
+    arr.forEach(function(e){
+      var k = comboBreakdownKey(e) || 'Unknown';
+      var b = byKey[k] = byKey[k] || {picks:0, w:0, l:0, units:0};
+      b.picks += 1;
+      if (e.status==='won') b.w += 1;
+      else if (e.status==='half_won') b.w += 0.5;
+      else if (e.status==='lost') b.l += 1;
+      else if (e.status==='half_lost') b.l += 0.5;
+      b.units += profitFor(e);
+    });
+    var rows = Object.keys(byKey).map(function(k){ return {key:k, b:byKey[k]}; })
+      .sort(function(a,b){ return b.b.units - a.b.units; });
+    function fmtN(n){ return n % 1 === 0 ? String(n) : n.toFixed(1); }
+    var table = '<div class="perf-bd-section"><h5>By Bet Type</h5><table class="perf-table"><tbody>'+
+      rows.map(function(r){
+        var b = r.b, dec = b.w + b.l;
+        return '<tr>'+
+          '<td>'+esc(comboBreakdownLabel(r.key))+'</td>'+
+          '<td class="num">'+b.picks+'</td>'+
+          '<td class="num">'+(dec ? Math.round(100*b.w/dec)+'% ('+fmtN(b.w)+'-'+fmtN(b.l)+')' : '\u2013')+'</td>'+
+          '<td class="num units '+unitsClass(b.units)+'">'+fmtUnits(b.units)+'</td>'+
+        '</tr>';
+      }).join('')+'</tbody></table></div>';
+    return '<div class="'+boxClass+'">'+
+        '<h4 class="fx-section-head" data-section-toggle="leagueHistory">League History \u00B7 '+esc(fx.league)+' ('+arr.length+')<span class="fx-section-chevron">\u25BE</span></h4>'+
+        '<div class="fx-section-body">'+hero+leagueHistoryChartHtml(arr)+table+'</div>'+
+      '</div>';
+  }
+
   var RELATED_BETS_SHOW_MAX = 8;
   function relatedBetsHtml(fx){
     var related = relatedBetsForFixture(fx);
@@ -1865,7 +2311,7 @@
     var dayLabel = fmtDay(fx.date) + ' · ' + fmtTime(fx.ts);
     return '<div class="card" data-fxid="'+esc(fx.id)+'">'+
       '<div class="summary" data-toggle="'+esc(fx.id)+'">'+
-        '<div class="league-row">'+badge(fx.league, fx.leagueLogo,'sm')+' <span>'+esc(fx.league)+'</span>'+(fx.top5?'<span class="top5-chip">TOP '+fx.top5+'</span>':'')+'<span class="time">'+esc(dayLabel)+'</span></div>'+
+        '<div class="league-row">'+badge(fx.league, fx.leagueLogo,'sm')+' <span>'+esc(fx.league)+'</span>'+(fx.top5?'<span class="top5-chip">TOP '+fx.top5+'</span>':'')+(fx.priorSeason?'<span class="prior-chip" title="Stats for at least one team include games from the previous season (too few games this season at this venue yet)">PRIOR-SEASON STATS</span>':'')+'<span class="time">'+esc(dayLabel)+'</span></div>'+
         '<div class="matchup">'+
           '<div class="team">'+badge(fx.home, fx.homeLogo)+'<span>'+esc(fx.home)+'</span></div>'+
           '<div class="vs">vs</div>'+
@@ -1875,7 +2321,9 @@
       '</div>'+
       '<div class="expand" id="expand-'+esc(fx.id)+'">'+
         snapshotHtml(fx)+
+        standingsHtml(fx)+
         streaksHtml(fx)+
+        leagueHistoryHtml(fx)+
         relatedBetsHtml(fx)+
         last10Html(fx)+
         movesOverviewHtml(fx)+
@@ -1922,10 +2370,50 @@
     if (dateStr === tomorrowStr) return 'Tomorrow\'s Top 5';
     return 'Top 5 · ' + fmtDay(dateStr);
   }
+  // ---- Top picks respect the League filter (Carlos, 2026-10-06: "calculate the Top Bets
+  // of the Day to only include the leagues I have selected in the dashboard").
+  // The backend ranks the daily Top 5 across ALL leagues and ships each qualifying
+  // fixture's composite_rank_score as fx.rankScore. When only some leagues are selected,
+  // the top 5 per day is recomputed here from those scores among the selected leagues
+  // only (same ordering rule as the backend); with all leagues selected the backend
+  // rank (top5Orig) is used untouched. fx.top5 is overwritten so every chip/list that
+  // already reads it follows the filter. Empty selection = no filter, like passesFilters.
+  var TOP_ORIG_SET = false;
+  function leagueFilterActive(){ return leagueSelected.size > 0 && leagueSelected.size < leagueSet.length; }
+  function applyTopRanks(){
+    if (!TOP_ORIG_SET) {
+      FIXTURES.forEach(function(f){ f.top5Orig = (f.top5 != null ? f.top5 : null); });
+      TOP_ORIG_SET = true;
+    }
+    var canRerank = FIXTURES.some(function(f){ return f.rankScore != null; });
+    var next = {};
+    if (leagueFilterActive() && canRerank) {
+      var byDate = {};
+      FIXTURES.forEach(function(f){
+        if (f.rankScore == null || !leagueSelected.has(f.league)) return;
+        var d = f.date || '';
+        (byDate[d] = byDate[d] || []).push(f);
+      });
+      Object.keys(byDate).forEach(function(d){
+        byDate[d].sort(function(a,b){
+          return (b.rankScore - a.rankScore) || ((a.top5Orig||99) - (b.top5Orig||99));
+        }).slice(0,5).forEach(function(f,i){ next[f.id] = i+1; });
+      });
+    } else {
+      FIXTURES.forEach(function(f){ if (f.top5Orig != null) next[f.id] = f.top5Orig; });
+    }
+    var changed = false;
+    FIXTURES.forEach(function(f){
+      var v = (next[f.id] != null) ? next[f.id] : null;
+      if (f.top5 !== v) { f.top5 = v; changed = true; }
+    });
+    return changed;
+  }
   function renderTop(){
     var top5 = FIXTURES.filter(function(f){ return f.top5 != null; }).sort(function(a,b){ return a.top5-b.top5; });
     var others = FIXTURES.filter(function(f){
       if (f.top5 != null) return false;
+      if (leagueFilterActive() && !leagueSelected.has(f.league)) return false;
       var stars = [f.match_total, f.btts].concat(
         ['team_total','ml','dc','ah'].map(function(mk){ return (f[mk]||{}).home; }),
         ['team_total','ml','dc','ah'].map(function(mk){ return (f[mk]||{}).away; })
@@ -1933,6 +2421,11 @@
       return stars.some(function(s){ return s>=4; });
     });
     var html = '';
+    if (leagueFilterActive() && FIXTURES.some(function(f){ return f.rankScore != null; })) {
+      html += '<div class="top-lg-note" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px 2px;font-size:12.5px;color:var(--dim);">'+
+        '<span>Top picks ranked within your <b>'+leagueSelected.size+' of '+leagueSet.length+'</b> selected leagues.</span>'+
+        '<button type="button" data-top-leagues="1" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--accent);font-weight:600;cursor:pointer;">Change leagues</button></div>';
+    }
     if (top5.length) {
       var byDay = {}, dayOrder = [];
       top5.forEach(function(f){
@@ -1950,7 +2443,7 @@
       html += '<h3 style="font-size:13px;color:var(--dim);text-transform:uppercase;margin:16px 0 8px 2px;">Other 4★+ picks</h3>';
       html += others.map(function(f){ return cardHtml(f); }).join('');
     }
-    if (!html) html = '<div class="empty">No standout picks in the current window.</div>';
+    if (!top5.length && !others.length) html += '<div class="empty">'+(leagueFilterActive() ? 'No standout picks in your selected leagues.' : 'No standout picks in the current window.')+'</div>';
     document.getElementById('topList').innerHTML = html;
   }
 
@@ -2229,6 +2722,7 @@
   }
   function renderFixtures(){
     saveFilterState();
+    if (applyTopRanks()) renderTop();
     var list = FIXTURES.filter(passesFilters);
     if (!list.length) {
       document.getElementById('fixtureList').innerHTML = '<div class="empty">No fixtures match these filters.</div>';
@@ -2268,6 +2762,7 @@
     return '<div class="fx-row'+selCls+'" data-fxrow="'+esc(fx.id)+'">'+
         '<div class="fx-row-meta"><span class="fx-row-league">'+esc(fx.league)+'</span>'+
           (fx.top5?'<span class="top5-chip">TOP '+fx.top5+'</span>':'')+
+          (fx.priorSeason?'<span class="prior-chip" title="Stats for at least one team include games from the previous season (too few games this season at this venue yet)">PRIOR-SEASON STATS</span>':'')+
           '<span class="fx-row-time">'+esc(dayLabel)+'</span></div>'+
         '<div class="fx-row-teams">'+esc(fx.home)+' <span class="fx-row-vs">vs</span> '+esc(fx.away)+'</div>'+
         bestBetSummaryLine(fx)+
@@ -2290,7 +2785,7 @@
     var dayLabel = fmtDay(fx.date) + ' \u00b7 ' + fmtTime(fx.ts);
     return '<div class="card fx-detail-card" data-fxid="'+esc(fx.id)+'">'+
         '<div class="summary" style="cursor:default;">'+
-          '<div class="league-row">'+badge(fx.league, fx.leagueLogo,'sm')+' <span>'+esc(fx.league)+'</span>'+(fx.top5?'<span class="top5-chip">TOP '+fx.top5+'</span>':'')+'<span class="time">'+esc(dayLabel)+'</span></div>'+
+          '<div class="league-row">'+badge(fx.league, fx.leagueLogo,'sm')+' <span>'+esc(fx.league)+'</span>'+(fx.top5?'<span class="top5-chip">TOP '+fx.top5+'</span>':'')+(fx.priorSeason?'<span class="prior-chip" title="Stats for at least one team include games from the previous season (too few games this season at this venue yet)">PRIOR-SEASON STATS</span>':'')+'<span class="time">'+esc(dayLabel)+'</span></div>'+
           '<div class="matchup">'+
             '<div class="team">'+badge(fx.home, fx.homeLogo)+'<span>'+esc(fx.home)+'</span></div>'+
             '<div class="vs">vs</div>'+
@@ -2323,6 +2818,7 @@
     return '<div class="card fx-detail-card" data-fxid="'+esc(fx.id)+'">'+
         '<div class="expand open">'+
           collapsibleSection('snapshot', 'Snapshot', snapshotHtml(fx))+
+          collapsibleSection('standings', 'Standings', standingsHtml(fx, true))+
           collapsibleSection('streaks', 'Streaks', streaksHtml(fx))+
           collapsibleSection('last10', 'Last 10', last10Html(fx))+
           collapsibleSection('injuries', 'Injuries', injuriesHtml(fx))+
@@ -2340,6 +2836,7 @@
     if (!fx) return '';
     return '<div class="card fx-detail-card" data-fxid="'+esc(fx.id)+'">'+
         '<div class="expand open">'+
+          leagueHistoryHtml(fx)+
           relatedBetsHtml(fx)+
           collapsibleSection('lineMoves', 'Line Moves', movesOverviewHtml(fx))+
           collapsibleSection('markets', 'Markets', marketsHtml(fx))+
@@ -2365,6 +2862,7 @@
     var fx = selectedDetailFixtureId ? findFixture(selectedDetailFixtureId) : null;
     headerEl.innerHTML = fxDetailHeaderHtml(fx);
     statsEl.innerHTML = fxDetailStatsHtml(fx);
+    focusStandings(statsEl);
     recsEl.innerHTML = fxDetailRecsHtml(fx);
   }
   function renderFixturesDesktop(list, groupMode){
@@ -2393,6 +2891,8 @@
 
   // ---------- expand/collapse + full stats toggle (event delegation) ----------
   document.addEventListener('click', function(e){
+    var l10btn = e.target.closest('[data-l10]');
+    if (l10btn) { e.stopPropagation(); var pv = (l10btn.getAttribute('data-l10')||'').split(':'); setLast10Venue(pv[0], pv[1]); return; }
     var fxrow = e.target.closest('[data-fxrow]');
     if (fxrow) {
       selectedDetailFixtureId = fxrow.getAttribute('data-fxrow');
@@ -2415,6 +2915,7 @@
       toggleSectionCollapsed(sectionKey);
       var sectionWrap = sectionToggle.closest('.fx-section');
       if (sectionWrap) sectionWrap.classList.toggle('collapsed');
+      if (sectionKey === 'standings') focusStandings(sectionWrap);
       return;
     }
     var fs = e.target.closest('[data-fs-toggle]');
@@ -2480,6 +2981,9 @@
   document.getElementById('league-search').addEventListener('input', function(e){ renderLeagueOptions(e.target.value); });
   document.getElementById('league-all').addEventListener('click', function(){ leagueSelected = new Set(leagueSet); renderLeagueOptions(document.getElementById('league-search').value); updateDropdownCounts(); renderFixtures(); });
   document.getElementById('league-clear').addEventListener('click', function(){ leagueSelected = new Set(); renderLeagueOptions(document.getElementById('league-search').value); updateDropdownCounts(); renderFixtures(); });
+  document.addEventListener('click', function(e){
+    if (e.target.closest && e.target.closest('[data-top-leagues]')) openPanel(document.getElementById('f-league-panel'));
+  });
   document.getElementById('time-all').addEventListener('click', function(){ timeSelected = new Set(timeSet); renderTimeOptions(); updateDropdownCounts(); renderFixtures(); });
   document.getElementById('time-clear').addEventListener('click', function(){ timeSelected = new Set(); renderTimeOptions(); updateDropdownCounts(); renderFixtures(); });
   ['f-day','f-stars','f-market','fx-group'].forEach(function(id){
@@ -2533,7 +3037,9 @@
       if (decEl.value.trim() === ''){ amEl.value = ''; showImplied(null); return; }
       var decimal = parseFloat(decEl.value);
       var american = decimalToAmerican(decimal);
-      if (american != null){ amEl.value = fmtAmerican(american); showImplied(decimal); }
+      // No leading "+": an <input type="number"> rejects "+150" as an invalid value and
+      // silently blanks itself, so every positive result (decimal >= 2.00) showed nothing.
+      if (american != null){ amEl.value = String(Math.round(american)); showImplied(decimal); }
     });
 
     // quick reference -- common American prices, their Decimal equivalent
@@ -4433,6 +4939,7 @@
   buildFilterOptions();
   restoreFilterState();
   restoreTrackerFilterState();
+  applyTopRanks();
   renderTop();
   renderFixtures();
   renderTracker();
